@@ -1,59 +1,48 @@
-# Bolono
+# Bolono — back-office d'administration
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.1.8.
+Application Angular 22 (composants autonomes, signaux, Tailwind 4) pour administrer la plateforme Bolono. Elle reprend le thème de l'application mobile : couleurs de `BolonoColors`, police Noto Sans et icônes Phosphor.
 
-## Development server
-
-To start a local development server, run:
+## Démarrage
 
 ```bash
-ng serve
+npm install
+npm start          # http://localhost:4200
+npm test           # tests unitaires (Vitest)
+npm run build      # build de production dans dist/
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Le backend Spring Boot doit tourner sur l'adresse indiquée par `apiUrl`, dans `src/environments/environment.ts` (par défaut `http://localhost:8080`).
 
-## Code scaffolding
+## Connexion
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+L'authentification passe par Firebase, avec le même projet que l'app mobile (`bolono-2026`), par e-mail et mot de passe. Le backend vérifie ensuite le rôle de l'utilisateur : seuls les comptes au rôle `ADMIN` peuvent ouvrir le back-office.
 
-```bash
-ng generate component component-name
+1. Dans la console Firebase, enregistrez une application **Web** : Paramètres du projet → Vos applications → Ajouter une application.
+2. Reportez son `apiKey` et son `appId` dans `src/environments/environment.ts`. La clé actuellement présente est celle de l'app Android : si elle est restreinte à Android, Firebase refusera les connexions depuis un navigateur.
+3. Vérifiez que le fournisseur « E-mail/Mot de passe » est activé : Authentication → Méthode de connexion.
+4. Donnez le rôle `ADMIN` au compte concerné, en base ou via `PATCH /api/users/{id}/role` depuis un compte déjà administrateur.
+
+## Contenu
+
+| Page | Données (API) |
+| --- | --- |
+| Tableau de bord | `GET /api/admin/dashboard` : indicateurs, inscriptions, répartition, ventes, classements, activité |
+| Utilisateurs | `GET /api/admin/utilisateurs`, `DELETE /api/admin/utilisateurs/{id}` |
+| Produits | `GET /api/admin/produits`, `PATCH /api/admin/produits/{id}/validation` |
+| Formations | `GET /api/admin/formations`, `DELETE /api/admin/formations/{id}` |
+| Mentorat | `GET /api/users/admin/candidatures-mentor`, `POST …/{id}/decision` |
+| Commandes | `GET /api/admin/commandes`, `PATCH /api/admin/commandes/{id}/statut` |
+| Signalements | `GET /api/admin/signalements`, `PATCH /api/admin/signalements/{id}` |
+| Barre du haut | `GET /api/admin/recherche` (recherche globale), `GET /api/admin/notifications` (cloche) |
+
+## Organisation
+
+```
+src/app/
+  core/     session (Firebase), intercepteur et gardes, client d'API typé, formats, toasts
+  shared/   icônes, composants d'interface, graphiques SVG (courbes, anneau, histogramme)
+  layout/   cadre : barre latérale, recherche, notifications, menu du compte
+  pages/    une page par section
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
-```bash
-ng generate --help
-```
-
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Les icônes sont générées depuis `@phosphor-icons/core`. Pour en ajouter une, complétez la liste dans `scripts/generate-icons.mjs`, puis lancez `node scripts/generate-icons.mjs`.

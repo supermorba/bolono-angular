@@ -1,3 +1,254 @@
-/* You can add global styles to this file, and also import other style files */
-
 @import 'tailwindcss';
+
+/*
+ * Thème Bolono — repris du design system de l'application mobile
+ * (flutter/lib/core/design_system/tokens/bolono_colors.dart). Aucune couleur
+ * ne doit être écrite en dur ailleurs : utiliser ces jetons (bg-ivory,
+ * text-brown, border-line, …).
+ */
+
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-SemiBold.ttf') format('truetype');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans';
+  src: url('/fonts/NotoSans-ExtraBold.ttf') format('truetype');
+  font-weight: 800;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: 'Noto Sans', ui-sans-serif, system-ui, sans-serif;
+
+  /*
+   * Échelle typographique, un cran au-dessus des valeurs par défaut de
+   * Tailwind pour le confort de lecture. Utiliser ces jetons plutôt que des
+   * tailles en pixels écrites en dur.
+   */
+  --text-2xs: 0.75rem; /* 12 px : mentions, axes, compteurs */
+  --text-2xs--line-height: 1rem;
+  --text-xs: 0.8125rem; /* 13 px : textes secondaires */
+  --text-xs--line-height: 1.25rem;
+  --text-ms: 0.875rem; /* 14 px : tableaux, listes */
+  --text-ms--line-height: 1.3125rem;
+  --text-sm: 0.9375rem; /* 15 px : texte courant */
+  --text-sm--line-height: 1.4rem;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5rem;
+  --text-chiffre: 1.75rem; /* 28 px : chiffres clés */
+  --text-chiffre--line-height: 2.1rem;
+
+  /* Fonds & surfaces */
+  --color-ivory: #f9f7f2;
+  --color-surface: #ffffff;
+  --color-card: #f2ece1;
+  --color-ochre-surface: #f5efe6;
+  --color-terracotta-light: #f9efe9;
+  --color-sand: #ecd8c3;
+  --color-sand-deep: #d2b296;
+
+  /* Marque */
+  --color-brown: #261b16;
+  --color-brown-soft: #3a2a21;
+  --color-terracotta: #c45934;
+  --color-terracotta-dark: #9e4526;
+  --color-ochre: #c8923e;
+
+  /* Texte & traits */
+  --color-muted: #8f887f;
+  --color-muted-strong: #7a6f66;
+  --color-line: #e8e2d8;
+
+  /* États */
+  --color-success: #2e7d32;
+  --color-success-surface: #e8f5e9;
+  --color-warning: #d68910;
+  --color-warning-surface: #fff8e7;
+  --color-error: #d32f2f;
+  --color-error-surface: #fdecea;
+  --color-info: #3b78c4;
+  --color-info-surface: #eaf2fb;
+
+  /* Barre latérale (ébène chaud) */
+  --color-sidebar: #241712;
+  /* Orange du logo : accent lisible sur le fond sombre de la barre latérale */
+  --color-accent-clair: #f2a65a;
+
+  /* Courbe des animations d'interface, identique à l'app mobile (Curves.easeOutCubic) */
+  --ease-bolono: cubic-bezier(0.33, 1, 0.68, 1);
+
+  /* Séries de graphiques (profils d'utilisateurs) */
+  --color-chart-artisan: #e07b39;
+  --color-chart-acheteur: #4f8fd6;
+  --color-chart-mentor: #9c7bc4;
+  --color-chart-vert: #3e9a5e;
+
+  --shadow-card: 0 1px 2px rgb(38 27 22 / 0.04), 0 4px 16px rgb(38 27 22 / 0.04);
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+  body {
+    @apply bg-ivory font-sans text-brown antialiased;
+  }
+  ::selection {
+    background: rgb(196 89 52 / 0.2);
+  }
+}
+
+@layer components {
+  /* Carte standard du back-office */
+  /* min-w-0 : dans une grille, une carte peut rétrécir sous la largeur de son
+     contenu (graphiques SVG, tableaux) au lieu de déborder. */
+  .card {
+    @apply min-w-0 rounded-2xl border border-line bg-surface shadow-card;
+  }
+  .card-title {
+    @apply text-base font-bold text-brown;
+  }
+  .link-accent {
+    @apply text-xs font-semibold text-terracotta hover:text-terracotta-dark hover:underline;
+  }
+
+  /* Onglets de filtre : une seule ligne qui défile horizontalement sur petit écran. */
+  .onglets {
+    @apply flex max-w-full gap-1 overflow-x-auto rounded-xl bg-card p-1 [scrollbar-width:none];
+  }
+  .onglet {
+    @apply flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-semibold text-muted-strong transition hover:text-brown;
+  }
+  .onglet-actif {
+    @apply bg-surface text-brown shadow-card;
+  }
+
+  /*
+   * Navigation latérale — transposition de la barre d'onglets de l'app mobile :
+   * indicateur qui s'étire depuis son centre, icône qui grossit légèrement et
+   * passe du trait au plein en fondu (200 ms, easeOutCubic).
+   */
+  .nav-lien {
+    @apply relative flex items-center gap-3 rounded-lg px-3.5 py-2 text-sm text-white/70 outline-none
+      transition-colors duration-200 ease-bolono hover:bg-white/5 hover:text-white
+      focus-visible:ring-2 focus-visible:ring-white/40;
+  }
+  .nav-lien.actif {
+    @apply font-semibold text-white;
+  }
+  /* Collé au bord gauche de la barre latérale (la nav a 12 px de marge). */
+  .nav-indicateur {
+    @apply absolute top-1/2 -left-3 h-7 w-1 -translate-y-1/2 scale-y-0 rounded-r-full bg-accent-clair
+      transition-transform duration-200 ease-bolono;
+  }
+  .nav-lien.actif .nav-indicateur {
+    @apply scale-y-100;
+  }
+  .nav-icone {
+    @apply relative size-5 shrink-0 transition-transform duration-200 ease-bolono;
+  }
+  .nav-lien.actif .nav-icone {
+    @apply scale-112;
+  }
+  .nav-icone > * {
+    @apply absolute inset-0 transition-opacity duration-200 ease-bolono;
+  }
+  .nav-icone-plein {
+    @apply text-accent-clair opacity-0;
+  }
+  .nav-lien.actif .nav-icone-trait {
+    @apply opacity-0;
+  }
+  .nav-lien.actif .nav-icone-plein {
+    @apply opacity-100;
+  }
+
+  /* Défilement discret de la barre latérale quand l'écran est bas. */
+  .barre-defilante {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+  }
+
+  /* Champs */
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-brown
+      placeholder:text-muted outline-none transition focus:border-terracotta focus:ring-2 focus:ring-terracotta/15;
+  }
+
+  /* Tableaux */
+  .table {
+    @apply w-full text-left text-ms;
+  }
+  .table th {
+    @apply border-b border-line bg-ochre-surface/60 px-3 py-2.5 text-2xs font-semibold tracking-wide text-muted-strong uppercase;
+  }
+  .table td {
+    @apply border-b border-line/70 px-3 py-3 align-middle;
+  }
+  .table tbody tr {
+    @apply transition-colors hover:bg-ivory/80;
+  }
+  /* Variante dense pour les cartes du tableau de bord */
+  .table-compacte {
+    @apply text-xs;
+  }
+  .table-compacte th {
+    @apply px-2 py-2 text-2xs;
+  }
+  .table-compacte td {
+    @apply px-2 py-2.5;
+  }
+}
+
+/* Boutons — déclarés en @utility pour pouvoir se composer (btn-primary = btn + couleurs). */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition
+    disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brown text-white hover:bg-brown-soft;
+}
+@utility btn-accent {
+  @apply btn bg-terracotta text-white hover:bg-terracotta-dark;
+}
+@utility btn-outline {
+  @apply btn border border-line bg-surface text-brown hover:border-sand-deep hover:bg-ochre-surface;
+}
+@utility btn-danger {
+  @apply btn bg-error text-white hover:brightness-95;
+}
+@utility btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+/* Respect du réglage système « réduire les animations ». */
+@media (prefers-reduced-motion: reduce) {
+  .nav-lien,
+  .nav-indicateur,
+  .nav-icone,
+  .nav-icone > * {
+    transition: none;
+  }
+}

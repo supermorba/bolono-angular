@@ -1,0 +1,387 @@
+<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-extrabold tracking-tight sm:text-chiffre">Bonjour {{ prenom() }} 👋</h1>
+    <p class="mt-1 text-sm text-muted-strong">Voici un aperçu de l'activité sur la plateforme Bolono.</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-3">
+    <p class="flex items-center gap-2 text-sm text-muted-strong">
+      {{ aujourdhui }}
+      <app-icon name="calendar-blank" [size]="18" />
+    </p>
+    <button class="btn-outline btn-sm" [disabled]="exportEnCours() || !bornes()" (click)="exporterRapport()" title="Rapport CSV de la période sélectionnée dans « Ventes »">
+      @if (exportEnCours()) {
+        <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta"></span>
+      } @else {
+        <app-icon name="download-simple" [size]="16" />
+      }
+      Exporter le rapport
+    </button>
+  </div>
+</div>
+
+@if (erreur(); as message) {
+  <div class="card">
+    <app-etat-vide icone="warning" titre="Tableau de bord indisponible" [message]="message">
+      <button class="btn-accent btn-sm mt-2" (click)="charger()"><app-icon name="arrows-clockwise" [size]="16" /> Réessayer</button>
+    </app-etat-vide>
+  </div>
+} @else {
+  <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+    <!-- ── Colonne principale ─────────────────────────────────────── -->
+    <div class="@container flex min-w-0 flex-col gap-5">
+      <!-- Indicateurs -->
+      <div class="grid grid-cols-1 gap-4 @md:grid-cols-2 @4xl:grid-cols-4 @4xl:gap-5">
+        @for (
+          kpi of [
+            { libelle: 'Utilisateurs inscrits', icone: 'users', classes: 'bg-terracotta-light text-terracotta', ind: donnees()?.kpis?.utilisateurs },
+            { libelle: 'Produits en ligne', icone: 'package', classes: 'bg-terracotta-light text-terracotta', ind: donnees()?.kpis?.produitsEnLigne },
+            { libelle: 'Formations publiées', icone: 'graduation-cap', classes: 'bg-info-surface text-info', ind: donnees()?.kpis?.formations },
+            { libelle: 'Commandes ce mois', icone: 'shopping-cart', classes: 'bg-terracotta-light text-terracotta', ind: donnees()?.kpis?.commandesMois },
+          ];
+          track kpi.libelle
+        ) {
+          <div class="card p-4 sm:p-5">
+            <div class="flex items-center gap-3.5">
+              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full" [class]="kpi.classes">
+                <app-icon [name]="kpi.icone" [size]="24" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="text-ms leading-tight text-muted-strong">{{ kpi.libelle }}</p>
+                @if (kpi.ind; as ind) {
+                  <p class="mt-1 text-chiffre leading-tight font-extrabold">{{ nombre(ind.valeur) }}</p>
+                } @else {
+                  <app-squelette class="mt-2" [hauteur]="28" />
+                }
+              </div>
+            </div>
+            @if (kpi.ind; as ind) {
+              <app-evolution class="mt-3 block" [valeur]="ind.evolution" />
+            } @else {
+              <app-squelette class="mt-3 w-1/2" [hauteur]="12" />
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Inscriptions + répartition -->
+      <div class="grid grid-cols-1 gap-5 @2xl:grid-cols-12">
+        <section class="card relative p-4 sm:p-5 @2xl:col-span-7">
+          <app-barre-chargement [actif]="enChargement()" />
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 class="card-title">Évolution des inscriptions</h2>
+            <label class="relative flex items-center">
+              <app-icon name="calendar-blank" [size]="15" class="pointer-events-none absolute left-2.5 text-muted" />
+              <select
+                class="appearance-none rounded-lg border border-line bg-surface py-1.5 pr-8 pl-8 text-xs text-muted-strong outline-none focus:border-terracotta"
+                (change)="changerPeriode(+$any($event.target).value)"
+                aria-label="Période"
+              >
+                @for (p of [7, 30, 90]; track p) {
+                  <option [value]="p" [selected]="jours() === p">{{ p }} derniers jours</option>
+                }
+              </select>
+              <app-icon name="caret-down" [size]="13" class="pointer-events-none absolute right-2.5 text-muted" />
+            </label>
+          </div>
+          @if (inscriptions(); as i) {
+            <div class="mb-2 flex justify-center gap-5 text-xs text-muted-strong">
+              @for (s of i.series; track s.nom) {
+                <span class="flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-full" [style.background]="s.couleur"></span>{{ s.nom }}</span>
+              }
+            </div>
+            <app-courbes class="transition-opacity" [class.opacity-50]="enChargement()" [etiquettes]="i.etiquettes" [series]="i.series" [hauteur]="230" />
+          } @else {
+            <app-squelette [hauteur]="250" />
+          }
+        </section>
+
+        <section class="card p-4 sm:p-5 @2xl:col-span-5">
+          <h2 class="card-title mb-4">Répartition des utilisateurs</h2>
+          @if (donnees()) {
+            <div class="flex flex-wrap items-center justify-center gap-5">
+              <app-anneau [parts]="repartition()" [taille]="150" />
+              <ul class="flex min-w-36 flex-1 flex-col gap-3.5">
+                @for (p of repartition(); track p.nom) {
+                  <li class="flex items-center gap-2.5 text-sm">
+                    <span class="h-2.5 w-2.5 rounded-full" [style.background]="p.couleur"></span>
+                    <span class="flex-1 text-muted-strong">{{ p.nom }}</span>
+                    <span class="font-bold">{{ pourcentage(p.valeur) }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          } @else {
+            <app-squelette [hauteur]="200" />
+          }
+        </section>
+      </div>
+
+      <!-- Ventes + produits les plus vendus -->
+      <div class="grid grid-cols-1 gap-5 @2xl:grid-cols-12">
+        <section class="card p-4 sm:p-5 @2xl:col-span-5">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="card-title flex items-center gap-2">
+              Ventes
+              @if (ventesPeriode.isLoading() && ventesAffichees()) {
+                <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-terracotta"></span>
+              }
+            </h2>
+            <div class="flex rounded-lg border border-line p-0.5 text-2xs font-semibold" role="group" aria-label="Devise">
+              @for (d of ['FCFA', 'EUR']; track d) {
+                <button
+                  class="rounded-md px-3 py-1 transition"
+                  [class]="devise() === d ? 'bg-brown text-white' : 'text-muted-strong hover:text-brown'"
+                  (click)="devise.set($any(d))"
+                >
+                  {{ d }}
+                </button>
+              }
+            </div>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-1 rounded-lg bg-card p-0.5" role="group" aria-label="Période">
+            @for (p of periodes; track p.cle) {
+              <button
+                class="flex-1 rounded-md px-2 py-1 text-2xs font-semibold whitespace-nowrap transition"
+                [class]="periode() === p.cle ? 'bg-surface text-brown shadow-card' : 'text-muted-strong hover:text-brown'"
+                (click)="periode.set(p.cle)"
+              >
+                {{ p.libelle }}
+              </button>
+            }
+          </div>
+          @if (periode() === 'perso') {
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <label class="text-2xs font-semibold text-muted-strong">
+                Du
+                <input type="date" class="input mt-0.5 py-1.5! text-xs!" [max]="au()" [ngModel]="du()" (ngModelChange)="du.set($event)" />
+              </label>
+              <label class="text-2xs font-semibold text-muted-strong">
+                Au
+                <input type="date" class="input mt-0.5 py-1.5! text-xs!" [min]="du()" [max]="aujourdhuiIso" [ngModel]="au()" (ngModelChange)="au.set($event)" />
+              </label>
+            </div>
+          }
+          @if (ventesPeriode.error() && !ventesAffichees()) {
+            <p class="mt-4 text-xs text-error">{{ erreurVentes() }}</p>
+          } @else if (ventes(); as v) {
+            <p class="mt-3 text-chiffre font-extrabold">{{ v.total }}</p>
+            <app-evolution class="block" [valeur]="v.evolution" [libelle]="libellePeriode()" />
+            <p class="mt-1 text-xs text-muted-strong">{{ nombre(v.commandes) }} commande{{ v.commandes > 1 ? 's' : '' }} · panier moyen {{ v.panierMoyen }}</p>
+            <app-histogramme
+              class="mt-4"
+              [etiquettes]="v.etiquettes"
+              [valeurs]="v.valeurs"
+              [hauteur]="240"
+              [format]="formatAxe"
+              [formatInfobulle]="v.formatInfobulle"
+            />
+          } @else {
+            <app-squelette class="mt-4" [hauteur]="250" />
+          }
+        </section>
+
+        <section class="card p-4 sm:p-5 @2xl:col-span-7">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="card-title">Produits les plus vendus</h2>
+            <a routerLink="/produits" class="link-accent">Voir tout</a>
+          </div>
+          @if (donnees(); as d) {
+            @if (d.topProduits.length) {
+              <div class="overflow-x-auto">
+                <table class="table table-compacte">
+                  <thead>
+                    <tr><th class="w-8">#</th><th>Produit</th><th class="text-right">Ventes</th><th class="text-right">Revenus</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (p of d.topProduits; track p.id; let i = $index) {
+                      <tr>
+                        <td class="text-muted">{{ i + 1 }}</td>
+                        <td>
+                          <div class="flex items-center gap-3">
+                            @if (mediaUrl(p.image); as src) {
+                              <img [src]="src" alt="" class="h-10 w-10 rounded-lg object-cover" />
+                            } @else {
+                              <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-sand text-brown"><app-icon name="image" [size]="18" /></span>
+                            }
+                            <div>
+                              <p class="font-semibold">{{ p.nom }}</p>
+                              <p class="text-2xs text-muted">{{ p.categorie }}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td class="text-right font-semibold">{{ nombre(p.quantite) }}</td>
+                        <td class="text-right whitespace-nowrap">{{ fcfa(p.revenu) }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <app-etat-vide icone="package" titre="Aucune vente pour le moment" message="Les produits les plus vendus apparaîtront ici." />
+            }
+          } @else {
+            <app-squelette [hauteur]="260" />
+          }
+        </section>
+      </div>
+
+      <!-- Commandes récentes + formations -->
+      <div class="grid grid-cols-1 gap-5 @4xl:grid-cols-12">
+        <section class="card p-4 sm:p-5 @4xl:col-span-7">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="card-title">Commandes récentes</h2>
+            <a routerLink="/commandes" class="link-accent">Voir tout</a>
+          </div>
+          @if (donnees(); as d) {
+            @if (d.commandesRecentes.length) {
+              <div class="overflow-x-auto">
+                <table class="table table-compacte">
+                  <thead>
+                    <tr><th>Commande</th><th>Client</th><th class="text-right">Montant</th><th>Statut</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (c of d.commandesRecentes; track c.id) {
+                      <tr>
+                        <td class="whitespace-nowrap">
+                          <p class="font-semibold">{{ c.reference }}</p>
+                          <p class="text-2xs text-muted">{{ dateHeure(c.date) }}</p>
+                        </td>
+                        <td class="max-w-44">
+                          <p class="truncate font-medium">{{ c.client }}</p>
+                          <p class="truncate text-2xs text-muted" [title]="c.produits">{{ c.produits }}</p>
+                        </td>
+                        <td class="text-right font-semibold whitespace-nowrap">{{ fcfa(c.montant) }}</td>
+                        <td><app-badge [ton]="tonCommande[c.statut]">{{ libellesCommande[c.statut] }}</app-badge></td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <app-etat-vide icone="shopping-cart" titre="Aucune commande" />
+            }
+          } @else {
+            <app-squelette [hauteur]="240" />
+          }
+        </section>
+
+        <section class="card p-4 sm:p-5 @4xl:col-span-5">
+          <div class="mb-3 flex items-center justify-between">
+            <h2 class="card-title">Formations les plus suivies</h2>
+            <a routerLink="/formations" class="link-accent">Voir tout</a>
+          </div>
+          @if (donnees(); as d) {
+            @if (d.formationsTop.length) {
+              <ul class="divide-y divide-line/70">
+                @for (f of d.formationsTop; track f.id) {
+                  <li class="flex items-center gap-3 py-2.5">
+                    @if (mediaUrl(f.miniature); as src) {
+                      <img [src]="src" alt="" class="h-9 w-9 shrink-0 rounded-lg object-cover" />
+                    } @else {
+                      <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-info-surface text-info"><app-icon name="graduation-cap" [size]="16" /></span>
+                    }
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-ms font-semibold" [title]="f.titre">{{ f.titre }}</p>
+                      <p class="text-2xs text-muted">{{ nombre(f.apprenants) }} apprenant{{ f.apprenants > 1 ? 's' : '' }}</p>
+                    </div>
+                    <div class="w-24 shrink-0">
+                      <p class="text-right text-xs font-bold">{{ f.tauxCompletion }}%</p>
+                      <span class="mt-1 block h-1.5 overflow-hidden rounded-full bg-card">
+                        <span class="block h-full rounded-full bg-chart-vert" [style.width.%]="f.tauxCompletion"></span>
+                      </span>
+                    </div>
+                  </li>
+                }
+              </ul>
+            } @else {
+              <app-etat-vide icone="graduation-cap" titre="Aucune formation" />
+            }
+          } @else {
+            <app-squelette [hauteur]="240" />
+          }
+        </section>
+      </div>
+    </div>
+
+    <!-- ── Colonne latérale ───────────────────────────────────────── -->
+    <aside class="grid min-w-0 grid-cols-1 content-start gap-5 md:grid-cols-2 xl:grid-cols-1">
+      <section class="card p-4 sm:p-5 md:row-span-2 xl:row-span-1">
+        <div class="mb-2 flex items-center justify-between">
+          <h2 class="card-title">Activité récente</h2>
+          <a routerLink="/activite" class="link-accent">Voir tout</a>
+        </div>
+        @if (donnees(); as d) {
+          @if (d.activites.length) {
+            <ul class="divide-y divide-line/70">
+              @for (a of d.activites; track $index) {
+                <li>
+                  <a [routerLink]="cheminLien(a.lien)" [queryParams]="parametresLien(a.lien)" class="-mx-2 flex items-start gap-3 rounded-lg px-2 py-3 transition hover:bg-ivory">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full" [class]="styleActivite[a.type].classes">
+                      <app-icon [name]="styleActivite[a.type].icone" [size]="19" />
+                    </span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block truncate text-ms font-semibold" [title]="a.titre">{{ a.titre }}</span>
+                      <span class="block truncate text-xs text-muted-strong" [title]="a.detail">{{ a.detail }}</span>
+                      <span class="mt-0.5 block text-2xs text-muted">{{ ilYa(a.date) }}</span>
+                    </span>
+                  </a>
+                </li>
+              }
+            </ul>
+          } @else {
+            <app-etat-vide icone="clock" titre="Pas encore d'activité" />
+          }
+        } @else {
+          @for (i of [1, 2, 3, 4, 5]; track i) {
+            <app-squelette class="my-3" [hauteur]="40" />
+          }
+        }
+      </section>
+
+      <section class="card p-4 sm:p-5">
+        <h2 class="card-title mb-3">Actions rapides</h2>
+        <div class="grid grid-cols-2 gap-2.5">
+          @for (a of actionsRapides; track a.libelle) {
+            <a
+              [routerLink]="a.lien"
+              [queryParams]="a.params"
+              class="flex min-w-0 flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-3 text-center text-xs font-medium transition hover:border-sand-deep hover:bg-ochre-surface"
+            >
+              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-terracotta-light text-terracotta">
+                <app-icon [name]="a.icone" [size]="18" />
+              </span>
+              <span class="leading-tight">{{ a.libelle }}</span>
+            </a>
+          }
+        </div>
+      </section>
+
+      <!-- Bandeau communauté -->
+      <section class="relative overflow-hidden rounded-2xl bg-brown text-white shadow-card">
+        <img src="images/artisan.jpg" alt="" class="absolute inset-0 h-full w-full object-cover object-right opacity-70" />
+        <div class="absolute inset-0 bg-gradient-to-r from-brown via-brown/80 to-brown/10"></div>
+        <div class="relative p-5">
+          <p class="max-w-52 text-lg leading-snug font-extrabold">Ensemble, valorisons le savoir-faire malien</p>
+          <div class="mt-5 grid grid-cols-3 gap-2">
+            @for (
+              s of [
+                { libelle: 'Artisans', icone: 'hand-heart', ind: donnees()?.communaute?.artisans },
+                { libelle: 'Mentors', icone: 'medal', ind: donnees()?.communaute?.mentors },
+                { libelle: 'Acheteurs', icone: 'storefront', ind: donnees()?.communaute?.acheteurs },
+              ];
+              track s.libelle
+            ) {
+              <div class="rounded-xl bg-black/35 p-2.5 backdrop-blur-sm">
+                <p class="flex items-center gap-1 text-2xs text-white/75"><app-icon [name]="s.icone" [size]="13" class="text-ochre" /> {{ s.libelle }}</p>
+                <p class="mt-1 text-lg font-extrabold">{{ s.ind ? nombre(s.ind.valeur) : '—' }}</p>
+                @if (s.ind && s.ind.evolution !== null) {
+                  <p class="text-2xs font-semibold text-[#8fd19e]">{{ s.ind.evolution >= 0 ? '+' : '' }}{{ s.ind.evolution }}%</p>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+}
