@@ -11,16 +11,9 @@ import { Icon } from '../shared/icon';
 import { Avatar, Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
 
 const STATUTS: Record<StatutProjet, { libelle: string; ton: Ton }> = {
-  EN_PLANIFICATION: { libelle: 'Recrutement', ton: 'info' },
-  EN_COURS: { libelle: 'En cours', ton: 'accent' },
+  OUVERT: { libelle: 'Ouvert', ton: 'info' },
   TERMINE: { libelle: 'Terminé', ton: 'succes' },
   ANNULE: { libelle: 'Annulé', ton: 'neutre' },
-};
-
-const MODES: Record<string, string> = {
-  SUR_SITE: 'Sur site',
-  A_DISTANCE: 'À distance',
-  HYBRIDE: 'Hybride',
 };
 
 const TON_PARTICIPATION: Record<string, { libelle: string; ton: Ton }> = {
@@ -66,9 +59,7 @@ const TON_PARTICIPATION: Record<string, { libelle: string; ton: Ton }> = {
           @for (
             l of [
               { l: 'Budget', v: fcfa(p.budget) },
-              { l: 'Mode de travail', v: p.modeTravail ? modes[p.modeTravail] ?? p.modeTravail : '—' },
               { l: 'Lieu', v: lieu(d) },
-              { l: 'Délai', v: d.delaiJours ? d.delaiJours + ' jours' : '—' },
               { l: 'Artisans', v: p.participants + ' / ' + p.artisansRequis },
               { l: 'Candidatures jusqu’au', v: dateCourte(p.dateLimiteCandidature) },
             ];
@@ -80,9 +71,6 @@ const TON_PARTICIPATION: Record<string, { libelle: string; ton: Ton }> = {
             </div>
           }
         </dl>
-        @if (d.defraiement) {
-          <p class="mt-2 text-xs text-muted-strong">Frais de déplacement pris en charge.</p>
-        }
 
         <h4 class="mt-6 mb-2 font-bold">Initiateur</h4>
         <div class="flex items-center gap-3">
@@ -147,7 +135,6 @@ export class FicheProjet {
   protected readonly dateHeure = dateHeure;
   protected readonly ilYa = ilYa;
   protected readonly statuts = STATUTS;
-  protected readonly modes = MODES;
   protected readonly participations = TON_PARTICIPATION;
   protected readonly ordreStatuts = Object.keys(STATUTS) as StatutProjet[];
 

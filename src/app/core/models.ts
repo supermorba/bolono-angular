@@ -439,14 +439,13 @@ export interface StatutMentorAdmin {
   vues: number;
 }
 
-export type StatutProjet = 'EN_PLANIFICATION' | 'EN_COURS' | 'TERMINE' | 'ANNULE';
+export type StatutProjet = 'OUVERT' | 'TERMINE' | 'ANNULE';
 
 export interface ProjetAdmin {
   id: number;
   titre: string;
   description: string;
   statut: StatutProjet;
-  modeTravail: string | null;
   ville: string | null;
   budget: number;
   artisansRequis: number;
@@ -473,8 +472,6 @@ export interface ProjetDetailAdmin {
   photos: string[];
   audioUrl: string | null;
   communeOuQuartier: string | null;
-  delaiJours: number | null;
-  defraiement: boolean;
   participations: ParticipationAdmin[];
 }
 
