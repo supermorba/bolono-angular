@@ -69,43 +69,62 @@ const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
       </div>
     } @else if (page(); as p) {
       @if (p.content.length) {
-        <div class="grid grid-cols-1 gap-5 transition-opacity sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" [class.opacity-60]="liste.isLoading()">
+        <div class="grid grid-cols-1 items-start gap-5 transition-opacity sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" [class.opacity-60]="liste.isLoading()">
           @for (produit of p.content; track produit.id) {
-            <article class="card flex flex-col overflow-hidden">
-              <button type="button" class="relative block aspect-4/3 bg-sand text-left" (click)="selection.set(produit.id)" [attr.aria-label]="'Ouvrir la fiche de ' + produit.nom">
+            <article class="card group flex flex-col overflow-hidden transition-shadow hover:shadow-lg">
+              <button
+                type="button"
+                class="relative block aspect-16/10 w-full shrink-0 overflow-hidden bg-sand text-left"
+                (click)="selection.set(produit.id)"
+                [attr.aria-label]="'Ouvrir la fiche de ' + produit.nom"
+              >
                 @if (mediaUrl(produit.images[0]); as src) {
-                  <img [src]="src" [alt]="produit.nom" class="h-full w-full object-cover" loading="lazy" />
+                  <img
+                    [src]="src"
+                    [alt]="produit.nom"
+                    class="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
+                  />
                 } @else {
-                  <span class="flex h-full items-center justify-center text-sand-deep"><app-icon name="image" [size]="42" /></span>
+                  <span class="absolute inset-0 flex items-center justify-center text-sand-deep"><app-icon name="image" [size]="36" /></span>
                 }
-                <app-badge class="absolute top-3 left-3" [ton]="statuts[produit.statut].ton">{{ statuts[produit.statut].libelle }}</app-badge>
-                <span class="absolute right-3 bottom-3 hidden rounded-full bg-brown/75 px-2.5 py-1 text-2xs font-semibold text-white sm:inline">Voir la fiche</span>
+                <app-badge class="absolute top-2.5 left-2.5" [ton]="statuts[produit.statut].ton">{{ statuts[produit.statut].libelle }}</app-badge>
                 @if (produit.images.length > 1) {
-                  <span class="absolute right-3 bottom-3 rounded-full bg-brown/70 px-2 py-0.5 text-2xs text-white">
+                  <span class="absolute top-2.5 right-2.5 rounded-full bg-brown/70 px-2 py-0.5 text-2xs font-semibold text-white">
                     {{ produit.images.length }} photos
                   </span>
                 }
               </button>
-              <div class="flex flex-1 flex-col p-4">
-                <p class="text-2xs font-semibold tracking-wide text-muted uppercase">
-                  {{ produit.categorie ?? (produit.type ? typesProduit[produit.type] : '—') }}
+
+              <div class="flex flex-1 flex-col gap-2 p-4">
+                <div class="flex items-center justify-between gap-2 text-2xs text-muted">
+                  <span class="truncate font-semibold tracking-wide uppercase">
+                    {{ produit.categorie ?? (produit.type ? typesProduit[produit.type] : '—') }}
+                  </span>
+                  <span class="shrink-0">{{ dateCourte(produit.dateCreation) }}</span>
+                </div>
+
+                <div class="min-w-0">
+                  <h2 class="truncate font-bold" [title]="produit.nom">{{ produit.nom }}</h2>
+                  @if (produit.description) {
+                    <p class="mt-0.5 line-clamp-2 text-xs text-muted-strong">{{ produit.description }}</p>
+                  }
+                </div>
+
+                <div class="flex items-end justify-between gap-2">
+                  <p class="text-lg leading-none font-extrabold text-terracotta">{{ fcfa(produit.prixFCFA) }}</p>
+                  <p class="text-2xs text-muted-strong">
+                    <span class="font-semibold text-brown">{{ produit.stock ?? '—' }}</span> {{ produit.uniteMesure ?? '' }} en stock ·
+                    <span class="font-semibold text-brown">{{ nombre(produit.ventes) }}</span> vendus
+                  </p>
+                </div>
+
+                <p class="flex min-w-0 items-center gap-1.5 border-t border-line pt-2 text-xs text-muted-strong">
+                  <app-icon name="user" [size]="14" class="text-muted" />
+                  <span class="truncate font-semibold text-brown">{{ produit.vendeur ?? '—' }}</span>
                 </p>
-                <h2 class="mt-0.5 font-bold">{{ produit.nom }}</h2>
-                @if (produit.description) {
-                  <p class="mt-1 line-clamp-2 text-xs text-muted-strong">{{ produit.description }}</p>
-                }
-                <p class="mt-3 text-lg font-extrabold text-terracotta">{{ fcfa(produit.prixFCFA) }}</p>
-                <dl class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-strong">
-                  <dt>Stock</dt>
-                  <dd class="text-right font-semibold text-brown">{{ produit.stock ?? '—' }} {{ produit.uniteMesure ?? '' }}</dd>
-                  <dt>Vendus</dt>
-                  <dd class="text-right font-semibold text-brown">{{ nombre(produit.ventes) }}</dd>
-                  <dt>Vendeur</dt>
-                  <dd class="truncate text-right font-semibold text-brown">{{ produit.vendeur ?? '—' }}</dd>
-                  <dt>Ajouté le</dt>
-                  <dd class="text-right font-semibold text-brown">{{ dateCourte(produit.dateCreation) }}</dd>
-                </dl>
-                <div class="mt-auto flex gap-2 pt-4">
+
+                <div class="mt-auto flex gap-2 pt-1">
                   @if (produit.statut !== 'EN_LIGNE') {
                     <button class="btn-accent btn-sm flex-1" [disabled]="enCours() === produit.id" (click)="valider(produit, true)">
                       <app-icon name="check" [size]="15" /> {{ produit.statut === 'REFUSE' ? 'Remettre en ligne' : 'Valider' }}
@@ -134,7 +153,7 @@ const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
     } @else {
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         @for (i of [1, 2, 3, 4]; track i) {
-          <app-squelette [hauteur]="360" />
+          <app-squelette [hauteur]="320" />
         }
       </div>
     }

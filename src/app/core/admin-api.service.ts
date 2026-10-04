@@ -14,8 +14,6 @@ import type {
   CommentaireAdmin,
   FormationDetailAdmin,
   FormationRequest,
-  LivraisonAdmin,
-  ModePaiement,
   ModuleRequest,
   ParametreAdmin,
   ProjetAdmin,
@@ -26,12 +24,13 @@ import type {
   TypeCategorie,
   TypeProduit,
   CommandeAdmin,
+  DecisionLitige,
   Notifications,
+  TransactionAdmin,
   OptionsNotification,
   ProduitAdmin,
   ResultatsRecherche,
   SignalementAdmin,
-  StatutCommande,
   StatutPublication,
   SuspensionResultat,
   UtilisateurDetail,
@@ -109,8 +108,25 @@ export class AdminApi {
   // ── Commandes ─────────────────────────────────────────────────────────────
 
 
-  changerStatutCommande(id: number, statut: StatutCommande, notification?: OptionsNotification): Observable<CommandeAdmin> {
-    return this.http.patch<CommandeAdmin>(`${this.base}/commandes/${id}/statut`, { statut }, { params: paramsNotification(notification) });
+  // Les vendeurs gèrent leurs commandes : l'équipe n'en change plus le statut.
+  // Elle intervient sur les transactions sécurisées (une par vendeur) :
+  // paiements reçus, litiges, remboursements et versements, chaque fois avec
+  // la référence de l'opération.
+
+  confirmerPaiement(reference: string, montantRecu: number, referenceOperation: string): Observable<void> {
+    return this.http.post<void>(`${this.base}/paiements/${reference}/confirmer`, { montantRecu, referenceOperation });
+  }
+
+  trancherLitige(reference: string, decision: DecisionLitige, commentaire: string): Observable<TransactionAdmin> {
+    return this.http.post<TransactionAdmin>(`${this.base}/transactions/${reference}/trancher`, { decision, commentaire });
+  }
+
+  marquerRembourse(reference: string, referenceOperation: string): Observable<TransactionAdmin> {
+    return this.http.post<TransactionAdmin>(`${this.base}/transactions/${reference}/rembourse`, { referenceOperation });
+  }
+
+  marquerVerse(reference: string, referenceOperation: string): Observable<TransactionAdmin> {
+    return this.http.post<TransactionAdmin>(`${this.base}/transactions/${reference}/verse`, { referenceOperation });
   }
 
   // ── Signalements ──────────────────────────────────────────────────────────
@@ -208,14 +224,6 @@ export class AdminApi {
   }
 
   // ── Commandes ─────────────────────────────────────────────────────────────
-
-  definirLivraison(id: number, livraison: LivraisonAdmin, notification?: OptionsNotification): Observable<CommandeAdmin> {
-    return this.http.put<CommandeAdmin>(`${this.base}/commandes/${id}/livraison`, livraison, { params: paramsNotification(notification) });
-  }
-
-  definirPaiement(id: number, req: { valide: boolean; mode: ModePaiement | null; reference: string | null }, notification?: OptionsNotification): Observable<CommandeAdmin> {
-    return this.http.patch<CommandeAdmin>(`${this.base}/commandes/${id}/paiement`, req, { params: paramsNotification(notification) });
-  }
 
   exporterCommandes(filtres: { statut?: string; q?: string; du?: string; au?: string }): Observable<Blob> {
     return this.http.get(`${this.base}/commandes/export`, { params: parametres(filtres), responseType: 'blob' });

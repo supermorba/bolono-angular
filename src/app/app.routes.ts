@@ -55,6 +55,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/commandes').then((m) => m.CommandesPage),
       },
       {
+        path: 'paiements',
+        title: 'Paiements et litiges · Bolono Admin',
+        loadComponent: () => import('./pages/paiements').then((m) => m.PaiementsPage),
+      },
+      {
         path: 'signalements',
         title: 'Signalements · Bolono Admin',
         loadComponent: () => import('./pages/signalements').then((m) => m.SignalementsPage),

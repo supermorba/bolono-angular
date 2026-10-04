@@ -73,12 +73,19 @@ describe('AdminApi', () => {
   });
 
   it("n'envoie ni notification ni motif quand l'option est décochée", () => {
-    api.changerStatutCommande(8, 'EXPEDIEE', { notifier: false, motif: 'ignoré' }).subscribe();
-    const req = http.expectOne((r) => r.url.endsWith('/api/admin/commandes/8/statut'));
+    api.supprimerPublication(8, { notifier: false, motif: 'ignoré' }).subscribe();
+    const req = http.expectOne((r) => r.url.endsWith('/api/admin/publications/8'));
     expect(req.request.params.get('notifier')).toBe('false');
     expect(req.request.params.has('motif')).toBe(false);
-    expect(req.request.body).toEqual({ statut: 'EXPEDIEE' });
-    req.flush({});
+    req.flush(null);
+  });
+
+  it('confirme un paiement avec le montant reçu et la référence de l’opération', () => {
+    api.confirmerPaiement('PS-ABCD2345', 25000, 'OM-1').subscribe();
+    const req = http.expectOne('http://localhost:8080/api/admin/paiements/PS-ABCD2345/confirmer');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ montantRecu: 25000, referenceOperation: 'OM-1' });
+    req.flush(null);
   });
 
   it('modère une publication signalée', () => {

@@ -70,6 +70,7 @@ export class Shell {
           compteur: () => this.notifications.compteurs()?.produitsEnAttente ?? 0,
         },
         { libelle: 'Commandes', icone: 'shopping-cart', lien: '/commandes' },
+        { libelle: 'Paiements et litiges', icone: 'lock-simple', lien: '/paiements' },
       ],
     },
     {

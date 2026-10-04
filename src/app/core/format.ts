@@ -1,5 +1,5 @@
 import { environment } from '../../environments/environment';
-import type { StatutCommande } from './models';
+import type { EtatFonds, StatutCommande, StatutTransaction } from './models';
 
 const entier = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
 const euro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -84,3 +84,48 @@ export function initiales(nom: string | null | undefined): string {
   const mots = nom.trim().split(/\s+/);
   return ((mots[0]?.[0] ?? '') + (mots.length > 1 ? mots[mots.length - 1][0] : '')).toUpperCase();
 }
+
+// ── Transactions sécurisées ─────────────────────────────────────────────────
+
+export const LIBELLES_TRANSACTION: Record<StatutTransaction, string> = {
+  CREEE: 'En attente',
+  PAYEE: 'Payée',
+  ACCEPTEE: 'En préparation',
+  EXPEDIEE: 'Expédiée',
+  REMISE: 'Remise (inspection)',
+  EN_LITIGE: 'Litige',
+  LIVREE: 'Livrée',
+  REFUSEE: 'Refusée',
+  ANNULEE: 'Annulée',
+  REMBOURSEE: 'Remboursée',
+};
+
+export const LIBELLES_FONDS: Record<EtatFonds, string> = {
+  HORS_SEQUESTRE: 'Payé à la livraison',
+  EN_ATTENTE: 'Paiement attendu',
+  BLOQUES: 'Bloqués',
+  LIBERES: 'À verser au vendeur',
+  VERSES: 'Versés au vendeur',
+  A_REMBOURSER: 'À rembourser',
+  REMBOURSES: 'Remboursés',
+};
+
+export const LIBELLES_ACTION_TRANSACTION: Record<string, string> = {
+  CREER: 'Commande passée',
+  CONFIRMER_PAIEMENT: 'Paiement reçu',
+  GENERER_CODE: 'Code de remise affiché',
+  ACCEPTER: 'Acceptée par le vendeur',
+  REFUSER: 'Refusée par le vendeur',
+  ANNULER: "Annulée par l'acheteur",
+  EXPEDIER: 'Expédiée',
+  VALIDER_CODE: 'Remise prouvée par le code',
+  CONFIRMER_RECEPTION: "Réception confirmée par l'acheteur",
+  OUVRIR_LITIGE: 'Litige ouvert',
+  REPONDRE_LITIGE: 'Version du vendeur envoyée',
+  TRANCHER_LITIGE: 'Litige tranché',
+  EXPIRER: 'Annulée : délai dépassé',
+  CONFIRMER_D_OFFICE: 'Livrée d’office (délai écoulé)',
+  MARQUER_REMBOURSE: 'Remboursement effectué',
+  MARQUER_VERSE: 'Versement effectué',
+};
+

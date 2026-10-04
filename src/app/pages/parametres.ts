@@ -11,6 +11,8 @@ import type { CategorieAdmin, CleParametre, ParametreAdmin, TypeCategorie } from
 import { API_ADMIN } from '../core/ressources';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
+import { IconeCategorie } from '../shared/icone-categorie';
+import { ICONES_CATEGORIES } from '../shared/icones-categories';
 import { Avatar, Badge, ConfirmationService, EtatVide, Squelette } from '../shared/ui';
 
 const TYPES_CATEGORIE: { type: TypeCategorie; libelle: string; aide: string }[] = [
@@ -22,7 +24,7 @@ const TYPES_CATEGORIE: { type: TypeCategorie; libelle: string; aide: string }[] 
 /** Catégories d'un type : ajout, renommage, activation, ordre, suppression. */
 @Component({
   selector: 'app-categories-parametres',
-  imports: [FormsModule, Icon, Badge, EtatVide, Squelette],
+  imports: [FormsModule, Icon, IconeCategorie, Badge, EtatVide, Squelette],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-card p-1 sm:w-fit">
@@ -30,7 +32,7 @@ const TYPES_CATEGORIE: { type: TypeCategorie; libelle: string; aide: string }[] 
         <button class="onglet" [class.onglet-actif]="type() === t.type" (click)="type.set(t.type)">{{ t.libelle }}</button>
       }
     </div>
-    <p class="mb-4 text-sm text-muted-strong">{{ aide() }} Une catégorie désactivée n'est plus proposée mais reste affichée sur les contenus existants.</p>
+    <p class="mb-4 text-sm text-muted-strong">{{ aide() }} Une catégorie désactivée n'est plus proposée mais reste affichée sur les contenus existants. Touchez la pastille d'une catégorie pour choisir son icône.</p>
 
     <form class="mb-4 flex gap-2" (submit)="$event.preventDefault(); ajouter()">
       <input class="input" name="nouvelle" [(ngModel)]="nouvelle" maxlength="60" placeholder="Nouvelle catégorie" />
@@ -49,6 +51,16 @@ const TYPES_CATEGORIE: { type: TypeCategorie; libelle: string; aide: string }[] 
               <button class="rounded p-0.5 text-muted hover:text-brown disabled:opacity-25" [disabled]="premier || enCours()" (click)="deplacer(i, -1)" aria-label="Monter"><app-icon name="arrow-up" [size]="13" /></button>
               <button class="rounded p-0.5 text-muted hover:text-brown disabled:opacity-25" [disabled]="dernier || enCours()" (click)="deplacer(i, 1)" aria-label="Descendre"><app-icon name="arrow-down" [size]="13" /></button>
             </div>
+            <button
+              class="rounded-full ring-terracotta transition hover:ring-2 disabled:opacity-50"
+              [class.ring-2]="choixIcone() === c.id"
+              [disabled]="enCours()"
+              (click)="choixIcone.set(choixIcone() === c.id ? null : c.id)"
+              [attr.aria-label]="'Icône de ' + c.nom"
+              [attr.aria-expanded]="choixIcone() === c.id"
+            >
+              <app-icone-categorie [cle]="c.icone" [nom]="c.nom" [taille]="34" />
+            </button>
             @if (edition() === c.id) {
               <form class="flex min-w-0 flex-1 gap-2" (submit)="$event.preventDefault(); renommer(c)">
                 <input class="input py-1.5!" name="nom" [(ngModel)]="nomEdite" maxlength="60" autofocus />
@@ -79,6 +91,36 @@ const TYPES_CATEGORIE: { type: TypeCategorie; libelle: string; aide: string }[] 
               </button>
             }
           </li>
+          @if (choixIcone() === c.id) {
+            <li class="bg-card/60 px-3 py-3">
+              <p class="mb-2 text-xs font-semibold text-muted-strong">Icône de « {{ c.nom }} »</p>
+              <div class="grid grid-cols-[repeat(auto-fill,minmax(4.5rem,1fr))] gap-1.5">
+                @for (i of icones; track i.cle) {
+                  <button
+                    class="flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] leading-tight hover:border-terracotta"
+                    [class.border-terracotta]="c.icone === i.cle"
+                    [class.bg-surface]="c.icone === i.cle"
+                    [class.border-transparent]="c.icone !== i.cle"
+                    [disabled]="enCours()"
+                    (click)="choisirIcone(c, i.cle)"
+                  >
+                    <app-icone-categorie [cle]="i.cle" [taille]="30" />
+                    <span class="text-muted-strong">{{ i.libelle }}</span>
+                  </button>
+                }
+                <button
+                  class="flex flex-col items-center gap-1 rounded-lg border px-1 py-2 text-[11px] leading-tight hover:border-terracotta"
+                  [class.border-terracotta]="!c.icone"
+                  [class.border-transparent]="!!c.icone"
+                  [disabled]="enCours()"
+                  (click)="choisirIcone(c, null)"
+                >
+                  <app-icone-categorie [nom]="c.nom" [taille]="30" />
+                  <span class="text-muted-strong">Initiale</span>
+                </button>
+              </div>
+            </li>
+          }
         } @empty {
           <li class="px-3 py-6 text-center text-sm text-muted">Aucune catégorie.</li>
         }
@@ -101,6 +143,8 @@ export class CategoriesParametres {
   protected readonly erreur = computed(() => messageApi(this.liste.error()));
   protected readonly enCours = signal(false);
   protected readonly edition = signal<number | null>(null);
+  protected readonly choixIcone = signal<number | null>(null);
+  protected readonly icones = ICONES_CATEGORIES;
   protected nouvelle = '';
   protected nomEdite = '';
 
@@ -151,6 +195,21 @@ export class CategoriesParametres {
       this.api.enregistrerCategorie(c.id, { type: c.type, nom: c.nom, icone: c.icone, active: !c.active }),
       c.active ? `« ${c.nom} » désactivée.` : `« ${c.nom} » activée.`,
       (maj) => this.remplacer(maj),
+    );
+  }
+
+  protected choisirIcone(c: CategorieAdmin, icone: string | null): void {
+    if (icone === c.icone) {
+      this.choixIcone.set(null);
+      return;
+    }
+    this.executer(
+      this.api.enregistrerCategorie(c.id, { type: c.type, nom: c.nom, icone, active: c.active }),
+      `Icône de « ${c.nom} » mise à jour.`,
+      (maj) => {
+        this.choixIcone.set(null);
+        this.remplacer(maj);
+      },
     );
   }
 

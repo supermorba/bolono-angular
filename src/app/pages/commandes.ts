@@ -1,33 +1,28 @@
 import { httpResource } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, linkedSignal, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AdminApi } from '../core/admin-api.service';
-import { LIBELLES_COMMANDE, dateHeure, fcfa } from '../core/format';
+import { LIBELLES_COMMANDE, LIBELLES_FONDS, LIBELLES_TRANSACTION, dateHeure, fcfa } from '../core/format';
 import { messageApi } from '../core/http';
 import type {
-  OptionsNotification, CommandeAdmin, LivraisonAdmin, ModePaiement, Page, StatutCommande, StatutLivraison } from '../core/models';
+  CommandeAdmin, ModePaiement, Page, StatutCommande, StatutLivraison, StatutTransaction, TransactionAdmin } from '../core/models';
 import { API_ADMIN, derniereValeur, rechargerEnDirect, sansVides } from '../core/ressources';
 import { enregistrerFichier } from '../core/telechargement';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { OptionNotification, notificationParDefaut } from '../shared/option-notification';
-import { Badge, BarreChargement, ConfirmationService, EtatVide, Pagination, Squelette } from '../shared/ui';
+import { Badge, BarreChargement, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
 import { TON_COMMANDE } from './dashboard';
-
-/** Étape suivante du cycle de vie d'une commande. */
-const SUIVANT: Partial<Record<StatutCommande, { statut: StatutCommande; libelle: string; icone: string }>> = {
-  EN_ATTENTE: { statut: 'PAYEE', libelle: 'Marquer payée', icone: 'credit-card' },
-  PAYEE: { statut: 'EXPEDIEE', libelle: 'Marquer expédiée', icone: 'truck' },
-  EXPEDIEE: { statut: 'LIVREE', libelle: 'Marquer livrée', icone: 'check-circle' },
-};
 
 export const LIBELLES_PAIEMENT: Record<ModePaiement, string> = {
   ORANGE_MONEY: 'Orange Money',
   WAVE: 'Wave',
   CARTE_BANCAIRE: 'Carte bancaire',
   PAYPAL: 'PayPal',
+  A_LA_LIVRAISON: 'À la livraison',
 };
 
+/** Livraison renseignée sur les commandes antérieures aux transactions sécurisées. */
 export const LIBELLES_LIVRAISON: Record<StatutLivraison, string> = {
   EN_PREPARATION: 'En préparation',
   EXPEDIE: 'Expédiée',
@@ -36,20 +31,31 @@ export const LIBELLES_LIVRAISON: Record<StatutLivraison, string> = {
   RETARDE: 'Retardée',
 };
 
-/** « 2026-09-28T14:30:00 » → « 2026-09-28T14:30 » (champ datetime-local). */
-function versChamp(iso: string | null | undefined): string {
-  return iso ? iso.slice(0, 16) : '';
-}
+export const TON_TRANSACTION: Record<StatutTransaction, Ton> = {
+  CREEE: 'attention',
+  PAYEE: 'info',
+  ACCEPTEE: 'info',
+  EXPEDIEE: 'accent',
+  REMISE: 'accent',
+  EN_LITIGE: 'erreur',
+  LIVREE: 'succes',
+  REFUSEE: 'neutre',
+  ANNULEE: 'neutre',
+  REMBOURSEE: 'neutre',
+};
 
-/** Détail déplié d'une commande : lignes, livraison, paiement, actions. */
+/**
+ * Détail déplié d'une commande, en lecture seule : chaque vendeur gère sa
+ * part (une transaction sécurisée par vendeur). L'équipe intervient depuis
+ * « Paiements et litiges ».
+ */
 @Component({
   selector: 'app-detail-commande',
-  imports: [FormsModule, Icon, OptionNotification],
+  imports: [Icon, Badge, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let c = commande();
     <div class="grid gap-5 lg:grid-cols-3">
-      <!-- Contenu et adresse -->
       <div>
         <p class="mb-2 text-2xs font-semibold tracking-wide text-muted-strong uppercase">Articles</p>
         <ul class="divide-y divide-line rounded-xl border border-line bg-surface">
@@ -66,154 +72,52 @@ function versChamp(iso: string | null | undefined): string {
         <p class="mt-3 flex items-start gap-2 text-ms text-muted-strong">
           <app-icon name="map-pin" [size]="17" class="mt-0.5 shrink-0 text-terracotta" /> {{ c.adresse }}
         </p>
-        <!-- S'applique aux actions de ce panneau : statut, paiement, livraison. -->
-        <app-option-notification class="mt-4 block" [destinataire]="c.client" [(valeur)]="notification" />
-        <div class="mt-4 flex flex-wrap gap-2">
-          @if (suivant[c.statut]; as s) {
-            <button class="btn-accent btn-sm" [disabled]="occupe()" (click)="changerStatut.emit({ statut: s.statut, notification })">
-              <app-icon [name]="s.icone" [size]="15" /> {{ s.libelle }}
-            </button>
-          }
-          @if (c.statut !== 'ANNULEE' && c.statut !== 'LIVREE') {
-            <button class="btn-outline btn-sm" [disabled]="occupe()" (click)="annuler.emit()">
-              <app-icon name="x-circle" [size]="15" /> Annuler la commande
-            </button>
-          }
-        </div>
       </div>
 
-      <!-- Paiement -->
-      <form class="rounded-xl border border-line bg-surface p-4" (submit)="$event.preventDefault(); enregistrerPaiement()">
-        <p class="mb-3 flex items-center gap-2 text-ms font-bold"><app-icon name="credit-card" [size]="17" /> Paiement</p>
-        <label class="block text-xs font-semibold text-muted-strong">
-          Mode
-          <select class="input mt-1 py-2!" name="mode" [(ngModel)]="paiement.mode">
-            <option [ngValue]="null">—</option>
-            @for (m of modes; track m) {
-              <option [ngValue]="m">{{ libellesPaiement[m] }}</option>
-            }
-          </select>
-        </label>
-        <label class="mt-3 block text-xs font-semibold text-muted-strong">
-          Référence de transaction
-          <input class="input mt-1 py-2!" name="reference" [(ngModel)]="paiement.reference" maxlength="120" />
-        </label>
-        <label class="mt-3 flex items-center gap-2 text-ms">
-          <input type="checkbox" class="h-4 w-4 accent-terracotta" name="valide" [(ngModel)]="paiement.valide" />
-          Paiement reçu et vérifié
-        </label>
-        @if (c.paiement?.date) {
-          <p class="mt-1 text-2xs text-muted">Validé le {{ dateHeure(c.paiement?.date) }}</p>
-        }
-        <button type="submit" class="btn-primary btn-sm mt-4 w-full" [disabled]="occupe()">Enregistrer le paiement</button>
-      </form>
-
-      <!-- Livraison -->
-      <form class="rounded-xl border border-line bg-surface p-4" (submit)="$event.preventDefault(); enregistrerLivraison()">
-        <p class="mb-3 flex items-center gap-2 text-ms font-bold"><app-icon name="truck" [size]="17" /> Livraison</p>
-        <div class="grid grid-cols-2 gap-3">
-          <label class="col-span-2 block text-xs font-semibold text-muted-strong sm:col-span-1">
-            Statut
-            <select class="input mt-1 py-2!" name="statut" [(ngModel)]="livraison.statut">
-              @for (s of statutsLivraison; track s) {
-                <option [ngValue]="s">{{ libellesLivraison[s] }}</option>
+      <div class="lg:col-span-2">
+        <p class="mb-2 text-2xs font-semibold tracking-wide text-muted-strong uppercase">Colis (un par vendeur)</p>
+        @if (colis.value(); as liste) {
+          @if (liste.length) {
+            <ul class="space-y-2">
+              @for (t of liste; track t.reference) {
+                <li class="rounded-xl border border-line bg-surface p-3.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2">
+                    <p class="font-semibold">{{ t.reference }} · {{ t.vendeur.nom }}</p>
+                    <app-badge [ton]="tonsTransaction[t.statut]">{{ libellesTransaction[t.statut] }}</app-badge>
+                  </div>
+                  <p class="mt-1 text-xs text-muted-strong">
+                    {{ fcfa(t.montant) }} · {{ t.mode === 'SEQUESTRE' ? 'Fonds : ' + libellesFonds[t.fonds] : 'Payé à la livraison' }}
+                    @if (t.transporteur || t.numeroSuivi) {
+                      · {{ t.transporteur }} {{ t.numeroSuivi }}
+                    }
+                  </p>
+                  @if (t.motif) {
+                    <p class="mt-1 text-xs text-muted">Motif : {{ t.motif }}</p>
+                  }
+                </li>
               }
-            </select>
-          </label>
-          <label class="col-span-2 block text-xs font-semibold text-muted-strong sm:col-span-1">
-            N° de suivi
-            <input class="input mt-1 py-2!" name="suivi" [(ngModel)]="livraison.numeroSuivi" maxlength="80" />
-          </label>
-          <label class="col-span-2 block text-xs font-semibold text-muted-strong">
-            Expédiée le
-            <input type="datetime-local" class="input mt-1 py-2!" name="expedition" [(ngModel)]="livraison.dateExpedition" />
-          </label>
-          <label class="col-span-2 block text-xs font-semibold text-muted-strong sm:col-span-1">
-            Livraison prévue
-            <input type="datetime-local" class="input mt-1 py-2!" name="estimee" [(ngModel)]="livraison.dateLivraisonEstimee" />
-          </label>
-          <label class="col-span-2 block text-xs font-semibold text-muted-strong sm:col-span-1">
-            Livrée le
-            <input type="datetime-local" class="input mt-1 py-2!" name="reelle" [(ngModel)]="livraison.dateLivraisonReelle" />
-          </label>
-        </div>
-        <button type="submit" class="btn-primary btn-sm mt-4 w-full" [disabled]="occupe()">Enregistrer la livraison</button>
-      </form>
+            </ul>
+          } @else {
+            <p class="text-ms text-muted">Commande antérieure aux transactions sécurisées.</p>
+          }
+        } @else if (colis.isLoading()) {
+          <p class="text-ms text-muted">Chargement…</p>
+        }
+        <a routerLink="/paiements" class="mt-3 inline-flex items-center gap-1.5 text-ms font-semibold text-terracotta hover:underline">
+          <app-icon name="lock-simple" [size]="15" /> Paiements, litiges, remboursements et versements
+        </a>
+      </div>
     </div>
   `,
 })
 export class DetailCommande {
-  private readonly api = inject(AdminApi);
-  private readonly toast = inject(ToastService);
   protected readonly fcfa = fcfa;
-  protected readonly dateHeure = dateHeure;
-  protected readonly suivant = SUIVANT;
-  protected readonly libellesPaiement = LIBELLES_PAIEMENT;
-  protected readonly libellesLivraison = LIBELLES_LIVRAISON;
-  protected readonly modes = Object.keys(LIBELLES_PAIEMENT) as ModePaiement[];
-  protected readonly statutsLivraison = Object.keys(LIBELLES_LIVRAISON) as StatutLivraison[];
+  protected readonly libellesTransaction = LIBELLES_TRANSACTION;
+  protected readonly libellesFonds = LIBELLES_FONDS;
+  protected readonly tonsTransaction = TON_TRANSACTION;
 
   readonly commande = input.required<CommandeAdmin>();
-  readonly occupe = input(false);
-  readonly modifiee = output<CommandeAdmin>();
-  readonly changerStatut = output<{ statut: StatutCommande; notification: OptionsNotification }>();
-  readonly annuler = output<void>();
-
-  protected notification = notificationParDefaut();
-  protected paiement = { mode: null as ModePaiement | null, reference: '', valide: false };
-  protected livraison = {
-    statut: 'EN_PREPARATION' as StatutLivraison,
-    numeroSuivi: '',
-    dateExpedition: '',
-    dateLivraisonEstimee: '',
-    dateLivraisonReelle: '',
-  };
-
-  ngOnInit(): void {
-    const c = this.commande();
-    this.paiement = { mode: c.paiement?.mode ?? null, reference: c.paiement?.reference ?? '', valide: !!c.paiement?.valide };
-    this.livraison = {
-      statut: c.livraison?.statut ?? 'EN_PREPARATION',
-      numeroSuivi: c.livraison?.numeroSuivi ?? '',
-      dateExpedition: versChamp(c.livraison?.dateExpedition),
-      dateLivraisonEstimee: versChamp(c.livraison?.dateLivraisonEstimee),
-      dateLivraisonReelle: versChamp(c.livraison?.dateLivraisonReelle),
-    };
-  }
-
-  protected enregistrerPaiement(): void {
-    this.api
-      .definirPaiement(this.commande().id, {
-        valide: this.paiement.valide,
-        mode: this.paiement.mode,
-        reference: this.paiement.reference.trim() || null,
-      }, this.notification)
-      .subscribe({
-        next: (c) => {
-          this.toast.succes(`${c.reference} : paiement enregistré.`);
-          this.modifiee.emit(c);
-        },
-        error: (e) => this.toast.erreur(messageApi(e)),
-      });
-  }
-
-  protected enregistrerLivraison(): void {
-    const l = this.livraison;
-    const livraison: LivraisonAdmin = {
-      statut: l.statut,
-      numeroSuivi: l.numeroSuivi.trim() || null,
-      dateExpedition: l.dateExpedition || null,
-      dateLivraisonEstimee: l.dateLivraisonEstimee || null,
-      dateLivraisonReelle: l.dateLivraisonReelle || null,
-    };
-    this.api.definirLivraison(this.commande().id, livraison, this.notification).subscribe({
-      next: (c) => {
-        this.toast.succes(`${c.reference} : livraison enregistrée.`);
-        this.modifiee.emit(c);
-      },
-      error: (e) => this.toast.erreur(messageApi(e)),
-    });
-  }
+  protected readonly colis = httpResource<TransactionAdmin[]>(() => `${API_ADMIN}/transactions/commande/${this.commande().id}`);
 }
 
 @Component({
@@ -224,7 +128,7 @@ export class DetailCommande {
     <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div>
         <h1 class="flex items-center gap-3 text-2xl font-extrabold">Commandes</h1>
-        <p class="mt-1 text-sm text-muted-strong">Suivi des commandes de la boutique, du paiement à la livraison.</p>
+        <p class="mt-1 text-sm text-muted-strong">Consultation des commandes : chaque vendeur gère la sienne.</p>
       </div>
       <button class="btn-outline btn-sm" [disabled]="exportEnCours()" (click)="exporter()">
         @if (exportEnCours()) {
@@ -317,13 +221,7 @@ export class DetailCommande {
                   @if (ouverte() === c.id) {
                     <tr class="bg-ochre-surface/50! hover:bg-ochre-surface/50!">
                       <td colspan="8" class="py-4!" (click)="$event.stopPropagation()">
-                        <app-detail-commande
-                          [commande]="c"
-                          [occupe]="enCours() === c.id"
-                          (modifiee)="remplacer($event)"
-                          (changerStatut)="changer(c, $event.statut, $event.notification)"
-                          (annuler)="annuler(c)"
-                        />
+                        <app-detail-commande [commande]="c" />
                       </td>
                     </tr>
                   }
@@ -346,7 +244,6 @@ export class DetailCommande {
 export class CommandesPage {
   private readonly api = inject(AdminApi);
   private readonly toast = inject(ToastService);
-  private readonly confirmation = inject(ConfirmationService);
   protected readonly fcfa = fcfa;
   protected readonly dateHeure = dateHeure;
   protected readonly libelles = LIBELLES_COMMANDE;
@@ -391,7 +288,6 @@ export class CommandesPage {
   protected readonly page = derniereValeur(this.liste);
   protected readonly erreur = computed(() => messageApi(this.liste.error()));
   protected readonly ouverte = signal<number | null>(null);
-  protected readonly enCours = signal<number | null>(null);
   protected readonly exportEnCours = signal(false);
   private minuterie: ReturnType<typeof setTimeout> | undefined;
 
@@ -411,36 +307,6 @@ export class CommandesPage {
     this.recherche.set('');
     this.du.set('');
     this.au.set('');
-  }
-
-  protected remplacer(maj: CommandeAdmin): void {
-    this.page.update((p) => p && { ...p, content: p.content.map((x) => (x.id === maj.id ? maj : x)) });
-  }
-
-  protected async annuler(c: CommandeAdmin): Promise<void> {
-    const { ok, notification } = await this.confirmation.demander({
-      titre: `Annuler la commande ${c.reference} ?`,
-      message: `La commande de ${c.client} (${fcfa(c.montant)}) passera au statut « Annulée » et sortira du chiffre d'affaires.`,
-      confirmer: 'Annuler la commande',
-      danger: true,
-      notification: c.client,
-    });
-    if (ok) this.changer(c, 'ANNULEE', notification);
-  }
-
-  protected changer(c: CommandeAdmin, statut: StatutCommande, notification?: OptionsNotification): void {
-    this.enCours.set(c.id);
-    this.api.changerStatutCommande(c.id, statut, notification).subscribe({
-      next: (maj) => {
-        this.enCours.set(null);
-        this.remplacer(maj);
-        this.toast.succes(`${c.reference} : ${LIBELLES_COMMANDE[statut].toLowerCase()}.`);
-      },
-      error: (e) => {
-        this.enCours.set(null);
-        this.toast.erreur(messageApi(e));
-      },
-    });
   }
 
   protected exporter(): void {
