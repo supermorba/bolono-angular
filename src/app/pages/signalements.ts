@@ -8,7 +8,7 @@ import type { OptionsNotification, Page, SignalementAdmin, SignalementDetail, St
 import { NotificationsService } from '../core/notifications.service';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
+import { Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton, EntetePage } from '../shared/ui';
 
 const STATUTS: Record<StatutPublication, { libelle: string; ton: Ton }> = {
   PUBLIEE: { libelle: 'Visible', ton: 'succes' },
@@ -54,21 +54,12 @@ export class DetailSignalements {
 
 @Component({
   selector: 'app-signalements',
-  imports: [Icon, Badge, EtatVide, Pagination, Squelette, DetailSignalements],
+  imports: [EntetePage, Icon, Badge, EtatVide, Pagination, Squelette, DetailSignalements],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="flex items-center gap-3 text-2xl font-extrabold">
-        Signalements
-        @if (liste.isLoading() && page()) {
-          <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta" aria-label="Mise à jour"></span>
-        }
-      </h1>
-      <p class="mt-1 text-sm text-muted-strong">
-        Publications signalées par la communauté. À partir de 3 signalements, une publication est masquée automatiquement
-        en attendant votre décision.
-      </p>
-    </div>
+    <app-entete-page titre="Signalements" [chargement]="liste.isLoading() && !!page()">
+      Masquage automatique à partir de 3 signalements, en attendant votre décision.
+    </app-entete-page>
 
     @if (liste.error() && !page()) {
       <div class="card">
@@ -86,7 +77,7 @@ export class DetailSignalements {
               }
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <span class="inline-flex items-center gap-1 rounded-full bg-error-surface px-2.5 py-0.5 text-2xs font-bold text-error">
+                  <span class="inline-flex items-center gap-1 rounded-sm bg-error-surface px-2.5 py-0.5 text-2xs font-bold text-error">
                     <app-icon name="flag" weight="fill" [size]="12" /> {{ s.nbSignalements }} signalement{{ s.nbSignalements > 1 ? 's' : '' }}
                   </span>
                   <app-badge [ton]="statuts[s.statut].ton">{{ statuts[s.statut].libelle }}</app-badge>
@@ -97,7 +88,7 @@ export class DetailSignalements {
                 @if (s.motifs.length) {
                   <div class="mt-2.5 flex flex-wrap gap-1.5">
                     @for (m of s.motifs; track m.motif) {
-                      <span class="rounded-full bg-error-surface px-2.5 py-0.5 text-2xs font-semibold text-error">{{ m.motif }} ×{{ m.nombre }}</span>
+                      <span class="rounded-sm bg-error-surface px-2.5 py-0.5 text-2xs font-semibold text-error">{{ m.motif }} ×{{ m.nombre }}</span>
                     }
                   </div>
                 }

@@ -116,8 +116,12 @@ export interface Dashboard {
 
 export interface Notifications {
   candidaturesEnAttente: number;
-  produitsEnAttente: number;
   publicationsSignalees: number;
+  /** Ventes sécurisées : paiements à rapprocher, litiges à trancher, fonds à rendre ou à verser. */
+  paiementsAConfirmer: number;
+  litigesEnCours: number;
+  remboursementsAEffectuer: number;
+  versementsAEffectuer: number;
 }
 
 export type RoleUtilisateur = 'ADMIN' | 'ARTISAN' | 'ACHETEUR';
@@ -134,11 +138,14 @@ export interface UtilisateurAdmin {
   ville: string | null;
   dateInscription: string;
   suspendu: boolean;
+  /** Boutique du compte (capacité vendeur), null s'il n'en a pas. */
+  boutiqueId: number | null;
 }
 
 export interface CompteursUtilisateurs {
   tous: number;
   artisans: number;
+  vendeurs: number;
   mentors: number;
   acheteurs: number;
   administrateurs: number;
@@ -168,6 +175,80 @@ export interface UtilisateurDetail {
   profilDeBase: 'ARTISAN' | 'ACHETEUR' | null;
   candidatureMentor: StatutCandidature | null;
   activite: ActiviteUtilisateur;
+  /** Nom de sa boutique (null s'il n'en a pas). */
+  boutique: string | null;
+}
+
+// ── Ventes sécurisées : synthèse et règles ──────────────────────────────────
+
+/** Éléments à traiter et argent en jeu (montants en FCFA). */
+export interface SyntheseVentes {
+  paiementsAConfirmer: number;
+  litigesEnCours: number;
+  aRembourser: number;
+  aVerser: number;
+  /** Payé par les acheteurs et bloqué jusqu'à la remise prouvée. */
+  montantBloque: number;
+  /** Dû aux vendeurs (commission déduite). */
+  montantAVerser: number;
+  montantARembourser: number;
+  commissionsAcquises: number;
+}
+
+/** Règles en vigueur, fixées dans la configuration du serveur (lecture seule). */
+export interface ReglesVentes {
+  delaiPaiementHeures: number;
+  delaiAcceptationHeures: number;
+  delaiExpeditionHeures: number;
+  delaiConfirmationHeures: number;
+  delaiInspectionHeures: number;
+  commissionPourMille: number;
+  maxEnAttenteParAcheteur: number;
+  rappelAvantHeures: number;
+}
+
+// ── Boutiques ────────────────────────────────────────────────────────────────
+
+/** OUVERTE / FERMEE : choix du vendeur ; MASQUEE : décision de l'équipe. */
+export type StatutBoutique = 'OUVERTE' | 'FERMEE' | 'MASQUEE';
+
+export interface BoutiqueAdmin {
+  id: number;
+  nom: string;
+  categorie: string | null;
+  ville: string | null;
+  logoUrl: string | null;
+  statut: StatutBoutique;
+  proprietaireId: number;
+  proprietaire: string;
+  proprietaireEmail: string | null;
+  proprietaireSuspendu: boolean;
+  produits: number;
+  produitsEnLigne: number;
+  /** Commandes payées, expédiées ou livrées ; chiffre d'affaires en FCFA. */
+  ventes: number;
+  chiffreAffaires: number;
+  dateCreation: string;
+}
+
+export interface BoutiqueAdminDetail {
+  boutique: BoutiqueAdmin;
+  description: string | null;
+  banniereUrl: string | null;
+  adresse: string | null;
+  telephone: string | null;
+  lienWhatsapp: string | null;
+  moyenVersement: string | null;
+  numeroVersement: string | null;
+  motifMasquage: string | null;
+  dateMasquage: string | null;
+}
+
+export interface CompteursBoutiques {
+  toutes: number;
+  ouvertes: number;
+  fermees: number;
+  masquees: number;
 }
 
 export interface SuspensionResultat {
@@ -176,7 +257,8 @@ export interface SuspensionResultat {
   firebaseMisAJour: boolean;
 }
 
-export type StatutProduit = 'EN_ATTENTE' | 'EN_LIGNE' | 'REFUSE';
+/** Pas de validation : un produit est en ligne dès sa création, l'équipe peut le masquer. */
+export type StatutProduit = 'EN_LIGNE' | 'MASQUE';
 
 export type TypeProduit = 'PRODUIT_FINI' | 'MATIERE_PREMIERE';
 

@@ -9,7 +9,7 @@ import { API_ADMIN } from '../core/ressources';
 import { ToastService } from '../core/toast.service';
 import { Modale, Televersement } from '../shared/fenetres';
 import { Icon } from '../shared/icon';
-import { ConfirmationService, EtatVide, Squelette } from '../shared/ui';
+import { ConfirmationService, EtatVide, Squelette, EntetePage } from '../shared/ui';
 
 /** Fenêtre de création ou de modification d'un badge. */
 @Component({
@@ -88,16 +88,12 @@ export class FormulaireBadge {
 
 @Component({
   selector: 'app-badges',
-  imports: [Icon, EtatVide, Squelette, FormulaireBadge],
+  imports: [EntetePage, Icon, EtatVide, Squelette, FormulaireBadge],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-extrabold">Badges</h1>
-        <p class="mt-1 text-sm text-muted-strong">Récompenses décernées aux apprenants qui réussissent un quiz. Associez-les aux quiz depuis la fiche d'une formation.</p>
-      </div>
-      <button class="btn-accent" (click)="edite.set('nouveau')"><app-icon name="plus" [size]="18" /> Nouveau badge</button>
-    </div>
+    <app-entete-page titre="Badges">
+      <button actions class="btn-accent" (click)="edite.set('nouveau')"><app-icon name="plus" [size]="18" /> Nouveau badge</button>
+    </app-entete-page>
 
     @if (badges.error() && !badges.hasValue()) {
       <div class="card">

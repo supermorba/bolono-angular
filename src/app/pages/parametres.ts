@@ -7,13 +7,13 @@ import { AdminApi } from '../core/admin-api.service';
 import { AuthService } from '../core/auth.service';
 import { dateCourte, dateHeure, nombre } from '../core/format';
 import { messageApi } from '../core/http';
-import type { CategorieAdmin, CleParametre, ParametreAdmin, TypeCategorie } from '../core/models';
+import type { CategorieAdmin, CleParametre, ParametreAdmin, ReglesVentes, TypeCategorie } from '../core/models';
 import { API_ADMIN } from '../core/ressources';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
 import { IconeCategorie } from '../shared/icone-categorie';
 import { ICONES_CATEGORIES } from '../shared/icones-categories';
-import { Avatar, Badge, ConfirmationService, EtatVide, Squelette } from '../shared/ui';
+import { Avatar, Badge, ConfirmationService, EtatVide, Squelette, EntetePage } from '../shared/ui';
 
 const TYPES_CATEGORIE: { type: TypeCategorie; libelle: string; aide: string }[] = [
   { type: 'PRODUIT', libelle: 'Produits', aide: 'Proposées aux artisans lorsqu’ils mettent un produit en vente.' },
@@ -335,17 +335,71 @@ export class TextesParametres {
   }
 }
 
-type Onglet = 'compte' | 'categories' | 'textes';
+/** Règles des ventes sécurisées : délais et commission, fixés côté serveur. */
+@Component({
+  selector: 'app-regles-ventes',
+  imports: [Icon, EtatVide, Squelette],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <h2 class="card-title mb-1">Règles des ventes sécurisées</h2>
+    <p class="mb-5 text-sm text-muted-strong">
+      Délais laissés à chaque partie et commission de la plateforme. Ils se règlent dans la configuration du serveur
+      (préfixe <code class="rounded bg-card px-1 text-xs">securise.</code>) et s'appliquent aux nouvelles transactions.
+    </p>
+    @if (regles.error() && !regles.hasValue()) {
+      <app-etat-vide icone="warning" titre="Règles indisponibles">
+        <button class="btn-accent btn-sm mt-2" (click)="regles.reload()">Réessayer</button>
+      </app-etat-vide>
+    } @else if (regles.hasValue()) {
+      @let r = regles.value();
+      <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        @for (
+          l of [
+            { icone: 'credit-card', libelle: 'Paiement par l’acheteur', valeur: duree(r.delaiPaiementHeures), aide: 'après la commande, sinon elle expire' },
+            { icone: 'check-circle', libelle: 'Réponse du vendeur', valeur: duree(r.delaiAcceptationHeures), aide: 'pour accepter ou refuser après paiement' },
+            { icone: 'truck', libelle: 'Expédition', valeur: duree(r.delaiExpeditionHeures), aide: 'après acceptation' },
+            { icone: 'clock', libelle: 'Livraison d’office', valeur: duree(r.delaiConfirmationHeures), aide: 'sans litige après l’expédition' },
+            { icone: 'eye', libelle: 'Inspection', valeur: duree(r.delaiInspectionHeures), aide: 'pour contester après la remise' },
+            { icone: 'bell', libelle: 'Rappel', valeur: duree(r.rappelAvantHeures), aide: 'avant chaque échéance' },
+            { icone: 'percent', libelle: 'Commission', valeur: commission(r.commissionPourMille), aide: 'prélevée sur chaque vente' },
+            { icone: 'shopping-cart', libelle: 'Achats non engagés', valeur: r.maxEnAttenteParAcheteur + ' max.', aide: 'par acheteur, pour protéger les stocks' },
+          ];
+          track l.libelle
+        ) {
+          <div class="rounded-xl border border-line p-4">
+            <dt class="flex items-center gap-2 text-xs font-semibold text-muted-strong"><app-icon [name]="l.icone" [size]="15" class="text-terracotta" /> {{ l.libelle }}</dt>
+            <dd class="mt-1.5 text-xl font-extrabold">{{ l.valeur }}</dd>
+            <dd class="text-2xs text-muted">{{ l.aide }}</dd>
+          </div>
+        }
+      </dl>
+    } @else {
+      <app-squelette [hauteur]="180" />
+    }
+  `,
+})
+export class ReglesVentesParametres {
+  protected readonly regles = httpResource<ReglesVentes>(() => `${API_ADMIN}/transactions/regles`);
+
+  protected duree(heures: number): string {
+    if (heures >= 24 && heures % 24 === 0) return `${heures / 24} jour${heures / 24 > 1 ? 's' : ''}`;
+    return `${heures} h`;
+  }
+
+  protected commission(pourMille: number): string {
+    return pourMille ? `${(pourMille / 10).toLocaleString('fr-FR')} %` : 'Aucune';
+  }
+}
+
+type Onglet = 'compte' | 'categories' | 'textes' | 'ventes';
 
 @Component({
   selector: 'app-parametres',
-  imports: [RouterLink, Icon, Avatar, Badge, CategoriesParametres, TextesParametres],
+  imports: [EntetePage, RouterLink, Icon, Avatar, Badge, CategoriesParametres, TextesParametres, ReglesVentesParametres],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-5">
-      <h1 class="text-2xl font-extrabold">Paramètres</h1>
-      <p class="mt-1 text-sm text-muted-strong">Votre compte, les catégories proposées dans l'application et ses textes.</p>
-    </div>
+    <app-entete-page titre="Paramètres">
+    </app-entete-page>
 
     <div class="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-card p-1 sm:w-fit">
       @for (o of onglets; track o.cle) {
@@ -359,6 +413,8 @@ type Onglet = 'compte' | 'categories' | 'textes';
       <section class="card p-4 sm:p-6"><app-categories-parametres /></section>
     } @else if (ongletActif() === 'textes') {
       <section class="card p-4 sm:p-6"><app-textes-parametres /></section>
+    } @else if (ongletActif() === 'ventes') {
+      <section class="card p-4 sm:p-6"><app-regles-ventes /></section>
     } @else {
     <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <section class="card p-6">
@@ -367,7 +423,7 @@ type Onglet = 'compte' | 'categories' | 'textes';
           <div class="flex items-center gap-4">
             <app-avatar [photo]="p.photoUrl" [nom]="p.nom" [size]="64" />
             <div>
-              <p class="text-lg font-extrabold">{{ p.nom }}</p>
+              <p class="text-lg font-bold">{{ p.nom }}</p>
               <p class="text-sm text-muted-strong">{{ p.email }}</p>
               <app-badge class="mt-1.5" ton="accent">Administrateur</app-badge>
             </div>
@@ -425,12 +481,13 @@ export class ParametresPage {
     { cle: 'compte', libelle: 'Compte', icone: 'user' },
     { cle: 'categories', libelle: 'Catégories', icone: 'tag' },
     { cle: 'textes', libelle: 'Textes et contacts', icone: 'text-align-left' },
+    { cle: 'ventes', libelle: 'Ventes sécurisées', icone: 'lock-simple' },
   ];
   /** Paramètre de requête ?onglet=… */
   readonly onglet = input<string>();
   protected readonly ongletActif = computed<Onglet>(() => {
     const o = this.onglet();
-    return o === 'categories' || o === 'textes' ? o : 'compte';
+    return o === 'categories' || o === 'textes' || o === 'ventes' ? o : 'compte';
   });
   protected readonly apiUrl = environment.apiUrl;
   protected readonly projetFirebase = environment.firebase.projectId;

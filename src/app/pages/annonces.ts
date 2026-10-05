@@ -9,7 +9,7 @@ import { API_ADMIN, derniereValeur, sansVides } from '../core/ressources';
 import { ToastService } from '../core/toast.service';
 import { Televersement } from '../shared/fenetres';
 import { Icon } from '../shared/icon';
-import { Badge, ConfirmationService, EtatVide, Pagination, Squelette } from '../shared/ui';
+import { Badge, ConfirmationService, EtatVide, Pagination, Squelette, EntetePage } from '../shared/ui';
 
 const AUDIENCES: Record<AudienceAnnonce, { libelle: string; icone: string }> = {
   TOUS: { libelle: 'Tout le monde', icone: 'users-three' },
@@ -21,16 +21,11 @@ const AUDIENCES: Record<AudienceAnnonce, { libelle: string; icone: string }> = {
 /** Composition, diffusion (temps réel + push) et historique des annonces. */
 @Component({
   selector: 'app-annonces',
-  imports: [FormsModule, Icon, Badge, EtatVide, Pagination, Squelette, Televersement],
+  imports: [EntetePage, FormsModule, Icon, Badge, EtatVide, Pagination, Squelette, Televersement],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="text-2xl font-extrabold">Annonces</h1>
-      <p class="mt-1 text-sm text-muted-strong">
-        Informez les utilisateurs de l'application : l'annonce s'affiche instantanément chez ceux qui sont connectés et,
-        si vous le souhaitez, arrive en notification sur les téléphones des autres.
-      </p>
-    </div>
+    <app-entete-page titre="Annonces">
+    </app-entete-page>
 
     <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
       <!-- Composition -->

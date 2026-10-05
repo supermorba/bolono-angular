@@ -33,8 +33,7 @@ import type {
   SignalementAdmin,
   StatutPublication,
   SuspensionResultat,
-  UtilisateurDetail,
-} from './models';
+  UtilisateurDetail, BoutiqueAdminDetail } from './models';
 
 /**
  * Actions de l'API d'administration (écritures, recherche, export).
@@ -85,8 +84,16 @@ export class AdminApi {
   // ── Produits ──────────────────────────────────────────────────────────────
 
 
-  validerProduit(id: number, valide: boolean, notification?: OptionsNotification): Observable<ProduitAdmin> {
-    return this.http.patch<ProduitAdmin>(`${this.base}/produits/${id}/validation`, { valide }, { params: paramsNotification(notification) });
+  /** Modération : masque un produit de la boutique (visible = false) ou l'y remet. */
+  changerVisibiliteProduit(id: number, visible: boolean, notification?: OptionsNotification): Observable<ProduitAdmin> {
+    return this.http.patch<ProduitAdmin>(`${this.base}/produits/${id}/visibilite`, { visible }, { params: paramsNotification(notification) });
+  }
+
+  // ── Boutiques ─────────────────────────────────────────────────────────────
+
+  /** Modération : masque une boutique (et ses produits) du catalogue, ou la rétablit. */
+  changerVisibiliteBoutique(id: number, visible: boolean, motif?: string, notification?: OptionsNotification): Observable<BoutiqueAdminDetail> {
+    return this.http.patch<BoutiqueAdminDetail>(`${this.base}/boutiques/${id}/visibilite`, { visible, motif: motif || null }, { params: paramsNotification(notification) });
   }
 
   // ── Formations ────────────────────────────────────────────────────────────

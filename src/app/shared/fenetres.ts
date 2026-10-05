@@ -14,17 +14,17 @@ import { Icon } from './icon';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'fermer.emit()' },
   template: `
-    <div class="fixed inset-0 z-40 bg-brown/40 backdrop-blur-[2px] transition-opacity starting:opacity-0" (click)="fermer.emit()"></div>
+    <div class="fixed inset-0 z-40 bg-brown/40 transition-opacity starting:opacity-0" (click)="fermer.emit()"></div>
     <div class="pointer-events-none fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-3 sm:items-center sm:p-6">
       <div
-        class="card pointer-events-auto my-auto flex max-h-[calc(100dvh-1.5rem)] w-full flex-col transition duration-200 starting:scale-95 starting:opacity-0 sm:max-h-[calc(100dvh-3rem)]"
+        class="card pointer-events-auto my-auto shadow-flottant flex max-h-[calc(100dvh-1.5rem)] w-full flex-col transition duration-200 starting:scale-95 starting:opacity-0 sm:max-h-[calc(100dvh-3rem)]"
         [class]="largeur()"
         role="dialog"
         aria-modal="true"
         [attr.aria-label]="titre()"
       >
         <div class="flex items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
-          <h2 class="text-lg font-extrabold">{{ titre() }}</h2>
+          <h2 class="text-lg font-bold">{{ titre() }}</h2>
           <button class="rounded-lg p-1.5 text-muted hover:bg-card hover:text-brown" (click)="fermer.emit()" aria-label="Fermer">
             <app-icon name="x" [size]="20" />
           </button>
@@ -60,7 +60,7 @@ export class Modale {
       [attr.aria-label]="titre()"
     >
       <div class="flex items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
-        <h2 class="truncate text-lg font-extrabold">{{ titre() }}</h2>
+        <h2 class="truncate text-lg font-bold">{{ titre() }}</h2>
         <button class="rounded-lg p-1.5 text-muted hover:bg-card hover:text-brown" (click)="fermer.emit()" aria-label="Fermer">
           <app-icon name="x" [size]="20" />
         </button>

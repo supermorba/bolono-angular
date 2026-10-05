@@ -5,22 +5,20 @@
 
 <!-- ── Barre latérale ──────────────────────────────────────────────── -->
 <aside
-  class="fixed inset-y-0 left-0 z-40 flex w-56 flex-col overflow-hidden bg-sidebar text-white/85 transition-transform duration-200 lg:translate-x-0"
+  class="fixed inset-y-0 left-0 z-40 flex w-56 flex-col overflow-hidden border-r border-sand/70 bg-surface transition-transform duration-200 lg:translate-x-0"
   [class.-translate-x-full]="!barreOuverte()"
 >
-  <a routerLink="/" class="flex shrink-0 items-center gap-3 px-6 pt-6 pb-4">
-    <img src="images/bolono-logo.svg" alt="" class="h-10 w-10" />
-    <span class="text-chiffre font-extrabold tracking-tight text-accent-clair">Bolono</span>
+  <a routerLink="/" class="flex shrink-0 items-center gap-2.5 px-5 pt-5 pb-6">
+    <img src="images/bolono-logo.svg" alt="" class="h-9 w-9" />
+    <span class="text-xl font-bold tracking-tight text-brown">Bolono</span>
   </a>
 
   <nav class="barre-defilante flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-4" aria-label="Navigation principale">
-    @for (section of sections; track $index) {
-      @if (section.titre) {
-        <p class="px-3 pt-4 pb-1.5 text-2xs font-semibold tracking-[0.08em] text-white/45 uppercase">{{ section.titre }}</p>
-      } @else if (!$first) {
-        <span class="mx-3 my-3 border-t border-white/10"></span>
+    @for (groupe of groupes; track $index) {
+      @if (!$first) {
+        <span class="mx-3 my-2.5 border-t border-line"></span>
       }
-      @for (entree of section.entrees; track entree.lien) {
+      @for (entree of groupe; track entree.lien) {
         <a
           [routerLink]="entree.lien"
           routerLinkActive="actif"
@@ -28,14 +26,13 @@
           [routerLinkActiveOptions]="{ exact: entree.lien === '/' }"
           class="nav-lien"
         >
-          <span class="nav-indicateur" aria-hidden="true"></span>
           <span class="nav-icone">
             <app-icon class="nav-icone-trait" [name]="entree.icone" [size]="20" />
             <app-icon class="nav-icone-plein" [name]="entree.icone" weight="fill" [size]="20" />
           </span>
           <span class="flex-1">{{ entree.libelle }}</span>
           @if (entree.compteur && entree.compteur() > 0) {
-            <span class="min-w-5 rounded-full bg-terracotta px-1.5 text-center text-2xs leading-5 font-bold text-white">
+            <span class="min-w-5 rounded-sm bg-terracotta px-1.5 text-center text-2xs leading-5 font-bold text-white">
               {{ entree.compteur() }}
             </span>
           }
@@ -43,14 +40,11 @@
       }
     }
   </nav>
-
-  <!-- Motif bogolan -->
-  <div class="pointer-events-none h-20 shrink-0 bg-[url(/motifs.svg)] bg-[length:auto_100%] bg-left-bottom bg-repeat-x opacity-80"></div>
 </aside>
 
 <!-- ── Contenu ─────────────────────────────────────────────────────── -->
 <div class="lg:pl-56">
-  <header class="sticky top-0 z-20 flex items-center gap-2 border-b border-line/70 bg-ivory/90 px-3 py-3 backdrop-blur sm:gap-4 sm:px-5 sm:py-3.5 lg:px-7">
+  <header class="sticky top-0 z-20 flex items-center gap-2 border-b border-line/70 bg-ivory px-3 py-3 sm:gap-4 sm:px-5 sm:py-3.5 lg:px-7">
     <button class="rounded-lg p-2 text-brown hover:bg-card lg:hidden" (click)="barreOuverte.set(true); $event.stopPropagation()" aria-label="Ouvrir le menu">
       <app-icon name="list" [size]="22" />
     </button>
@@ -64,14 +58,14 @@
         [placeholder]="placeholderRecherche"
         [value]="recherche()"
         (input)="saisir($any($event.target).value)"
-        (keydown.enter)="resultats() && ouvrir('/utilisateurs', recherche())"
+        (keydown.enter)="ouvrirPremiereRubrique()"
         aria-label="Recherche globale"
       />
       @if (rechercheEnCours()) {
         <span class="absolute top-1/2 right-3.5 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-line border-t-terracotta"></span>
       }
       @if (resultats(); as r) {
-        <div class="card absolute top-full right-0 left-0 z-30 mt-2 max-h-[70vh] overflow-y-auto p-2">
+        <div class="card shadow-flottant absolute top-full right-0 left-0 z-30 mt-2 max-h-[70vh] overflow-y-auto p-2">
           @if (aucunResultat()) {
             <p class="px-3 py-4 text-center text-sm text-muted">Aucun résultat pour « {{ recherche() }} »</p>
           }
@@ -119,13 +113,13 @@
         >
           <app-icon name="bell" [size]="22" />
           @if (notifications.total() > 0) {
-            <span class="absolute top-1 right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-error px-1 text-2xs font-bold text-white ring-2 ring-ivory">
+            <span class="absolute top-1 right-1 flex h-[18px] min-w-[18px] items-center justify-center rounded-sm bg-error px-1 text-2xs font-bold text-white ring-2 ring-ivory">
               {{ notifications.total() }}
             </span>
           }
         </button>
         @if (menuNotifications()) {
-          <div class="card fixed top-16 right-3 left-3 z-30 p-2 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:mt-2 sm:w-80">
+          <div class="card shadow-flottant fixed top-16 right-3 left-3 z-30 p-2 sm:absolute sm:top-full sm:right-0 sm:left-auto sm:mt-2 sm:w-80">
             <p class="px-3 pt-2 pb-2 text-sm font-bold">À traiter</p>
             @if (notifications.compteurs(); as c) {
               @if (notifications.total() === 0) {
@@ -137,11 +131,21 @@
                   <span class="flex-1 text-sm">{{ c.candidaturesEnAttente }} candidature{{ c.candidaturesEnAttente > 1 ? 's' : '' }} de mentorat</span>
                 </a>
               }
-              @if (c.produitsEnAttente) {
-                <a [routerLink]="['/produits']" [queryParams]="{ statut: 'EN_ATTENTE' }" class="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-ochre-surface">
-                  <span class="flex h-9 w-9 items-center justify-center rounded-full bg-warning-surface text-warning"><app-icon name="package" [size]="18" /></span>
-                  <span class="flex-1 text-sm">{{ c.produitsEnAttente }} produit{{ c.produitsEnAttente > 1 ? 's' : '' }} à valider</span>
-                </a>
+              @for (
+                t of [
+                  { n: c.paiementsAConfirmer, onglet: 'paiements', icone: 'hand-coins', classes: 'bg-info-surface text-info', texte: 'paiement(s) à confirmer' },
+                  { n: c.litigesEnCours, onglet: 'litiges', icone: 'scales', classes: 'bg-error-surface text-error', texte: 'litige(s) à trancher' },
+                  { n: c.remboursementsAEffectuer, onglet: 'rembourser', icone: 'arrow-u-up-left', classes: 'bg-warning-surface text-warning', texte: 'remboursement(s) à effectuer' },
+                  { n: c.versementsAEffectuer, onglet: 'verser', icone: 'money', classes: 'bg-success-surface text-success', texte: 'versement(s) à effectuer' },
+                ];
+                track t.onglet
+              ) {
+                @if (t.n) {
+                  <a routerLink="/paiements" [queryParams]="{ onglet: t.onglet }" class="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-ochre-surface">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-full" [class]="t.classes"><app-icon [name]="t.icone" [size]="18" /></span>
+                    <span class="flex-1 text-sm">{{ t.n }} {{ t.texte }}</span>
+                  </a>
+                }
               }
               @if (c.publicationsSignalees) {
                 <a routerLink="/signalements" class="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-ochre-surface">
@@ -159,18 +163,15 @@
       <!-- Compte -->
       <div class="relative" data-menu="compte">
         <button class="flex items-center gap-3 rounded-xl py-1.5 pr-1.5 pl-1.5 transition hover:bg-card sm:pr-2" (click)="menuCompte.set(!menuCompte())">
-          <span class="relative">
-            <app-avatar [photo]="auth.profil()?.photoUrl" [nom]="auth.profil()?.nom" [size]="40" />
-            <span class="absolute right-0 bottom-0 h-3 w-3 rounded-full bg-success ring-2 ring-ivory"></span>
-          </span>
+          <app-avatar [photo]="auth.profil()?.photoUrl" [nom]="auth.profil()?.nom" [size]="40" />
           <span class="hidden text-left sm:block">
             <span class="block max-w-40 truncate text-sm font-bold">{{ auth.profil()?.nom ?? 'Admin' }}</span>
-            <span class="flex items-center gap-1 text-2xs text-muted"><span class="h-1.5 w-1.5 rounded-full bg-success"></span> En ligne</span>
+            <span class="block text-2xs text-muted">Administrateur</span>
           </span>
           <app-icon name="caret-down" [size]="14" class="text-muted" />
         </button>
         @if (menuCompte()) {
-          <div class="card absolute top-full right-0 z-30 mt-2 w-56 p-1.5">
+          <div class="card shadow-flottant absolute top-full right-0 z-30 mt-2 w-56 p-1.5">
             <p class="truncate px-3 pt-2 pb-2 text-xs text-muted">{{ auth.profil()?.email }}</p>
             <a routerLink="/parametres" class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm hover:bg-ochre-surface">
               <app-icon name="gear-six" [size]="18" /> Paramètres

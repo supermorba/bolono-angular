@@ -9,7 +9,7 @@ import type { CandidatureMentor, Page, StatutCandidature } from '../core/models'
 import { NotificationsService } from '../core/notifications.service';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { Avatar, Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
+import { Avatar, Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton, EntetePage } from '../shared/ui';
 
 const STATUTS: Record<StatutCandidature, { libelle: string; ton: Ton }> = {
   EN_ATTENTE: { libelle: 'En attente', ton: 'attention' },
@@ -19,20 +19,11 @@ const STATUTS: Record<StatutCandidature, { libelle: string; ton: Ton }> = {
 
 @Component({
   selector: 'app-mentorat',
-  imports: [Icon, Avatar, Badge, EtatVide, Pagination, Squelette],
+  imports: [EntetePage, Icon, Avatar, Badge, EtatVide, Pagination, Squelette],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="flex items-center gap-3 text-2xl font-extrabold">
-        Mentorat
-        @if (liste.isLoading() && page()) {
-          <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta" aria-label="Mise à jour"></span>
-        }
-      </h1>
-      <p class="mt-1 text-sm text-muted-strong">
-        Candidatures des artisans souhaitant devenir mentors. Un mentor peut publier des formations et des statuts.
-      </p>
-    </div>
+    <app-entete-page titre="Mentorat" [chargement]="liste.isLoading() && !!page()">
+    </app-entete-page>
 
     <div class="onglets mb-5 sm:w-fit" role="tablist">
       @for (o of onglets; track o.valeur) {

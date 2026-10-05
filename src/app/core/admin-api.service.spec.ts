@@ -44,11 +44,19 @@ describe('AdminApi', () => {
     req.flush(new Blob(['a;b']));
   });
 
-  it('valide un produit', () => {
-    api.validerProduit(4, true).subscribe();
-    const req = http.expectOne('http://localhost:8080/api/admin/produits/4/validation');
+  it('masque une boutique avec un motif', () => {
+    api.changerVisibiliteBoutique(3, false, 'Contrefaçons').subscribe();
+    const req = http.expectOne('http://localhost:8080/api/admin/boutiques/3/visibilite');
     expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({ valide: true });
+    expect(req.request.body).toEqual({ visible: false, motif: 'Contrefaçons' });
+    req.flush({});
+  });
+
+  it('masque un produit', () => {
+    api.changerVisibiliteProduit(4, false).subscribe();
+    const req = http.expectOne('http://localhost:8080/api/admin/produits/4/visibilite');
+    expect(req.request.method).toBe('PATCH');
+    expect(req.request.body).toEqual({ visible: false });
     req.flush({});
   });
 

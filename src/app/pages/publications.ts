@@ -9,7 +9,7 @@ import { API_ADMIN, derniereValeur, rechargerEnDirect, sansVides } from '../core
 import { ToastService } from '../core/toast.service';
 import { Panneau } from '../shared/fenetres';
 import { Icon } from '../shared/icon';
-import { Avatar, Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
+import { Avatar, Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton, EntetePage } from '../shared/ui';
 
 export const STATUTS_PUBLICATION: Record<StatutPublication, { libelle: string; ton: Ton }> = {
   PUBLIEE: { libelle: 'Visible', ton: 'succes' },
@@ -102,18 +102,11 @@ export class CommentairesPublication {
 
 @Component({
   selector: 'app-publications',
-  imports: [Icon, Avatar, Badge, EtatVide, Pagination, Squelette, CommentairesPublication],
+  imports: [EntetePage, Icon, Avatar, Badge, EtatVide, Pagination, Squelette, CommentairesPublication],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="flex items-center gap-3 text-2xl font-extrabold">
-        Publications
-        @if (liste.isLoading() && page()) {
-          <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta" aria-label="Mise à jour"></span>
-        }
-      </h1>
-      <p class="mt-1 text-sm text-muted-strong">Fil d'actualité de la communauté : modération des publications et de leurs commentaires.</p>
-    </div>
+    <app-entete-page titre="Publications" [chargement]="liste.isLoading() && !!page()">
+    </app-entete-page>
 
     <div class="card mb-5 flex flex-wrap items-center gap-3 p-3 sm:p-4">
       <div class="flex gap-1 overflow-x-auto rounded-xl bg-card p-1">
@@ -148,7 +141,7 @@ export class CommentairesPublication {
                 <div class="relative">
                   <img [src]="src" alt="" class="aspect-video w-full object-cover" loading="lazy" />
                   @if (pub.mediaUrls.length > 1) {
-                    <span class="absolute right-2 bottom-2 rounded-full bg-black/60 px-2 py-0.5 text-2xs font-semibold text-white">+{{ pub.mediaUrls.length - 1 }}</span>
+                    <span class="absolute right-2 bottom-2 rounded-sm bg-black/60 px-2 py-0.5 text-2xs font-semibold text-white">+{{ pub.mediaUrls.length - 1 }}</span>
                   }
                 </div>
               }

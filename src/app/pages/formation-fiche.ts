@@ -11,7 +11,7 @@ import { ToastService } from '../core/toast.service';
 import { Modale, Televersement } from '../shared/fenetres';
 import { OptionNotification, notificationParDefaut } from '../shared/option-notification';
 import { Icon } from '../shared/icon';
-import { Badge, ConfirmationService, EtatVide, Squelette } from '../shared/ui';
+import { Badge, ConfirmationService, EtatVide, Squelette, EntetePage } from '../shared/ui';
 import { EditeurQuiz } from './editeur-quiz';
 
 const NIVEAUX = ['Débutant', 'Intermédiaire', 'Avancé'];
@@ -135,7 +135,7 @@ export class ModuleFormation {
 /** Création (/formations/nouvelle) et fiche détaillée (/formations/:id) d'une formation. */
 @Component({
   selector: 'app-formation-fiche',
-  imports: [FormsModule, RouterLink, Icon, Badge, EtatVide, Squelette, Televersement, ModuleFormation, EditeurQuiz, OptionNotification],
+  imports: [EntetePage, FormsModule, RouterLink, Icon, Badge, EtatVide, Squelette, Televersement, ModuleFormation, EditeurQuiz, OptionNotification],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <a routerLink="/formations" class="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-strong hover:text-brown">
@@ -149,17 +149,11 @@ export class ModuleFormation {
         </app-etat-vide>
       </div>
     } @else if (nouvelle() || fiche.hasValue()) {
-      <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div class="min-w-0">
-          <h1 class="truncate text-2xl font-extrabold">{{ nouvelle() ? 'Nouvelle formation' : fiche.value()?.titre }}</h1>
-          <p class="mt-1 text-sm text-muted-strong">
-            {{ nouvelle() ? 'Renseignez les informations, puis ajoutez les modules vidéo.' : 'Informations, modules vidéo et quiz.' }}
-          </p>
-        </div>
+      <app-entete-page [titre]="nouvelle() ? 'Nouvelle formation' : fiche.value()?.titre ?? ''">
         @if (!nouvelle()) {
-          <button class="btn-outline btn-sm text-error!" (click)="supprimer()"><app-icon name="trash" [size]="15" /> Supprimer la formation</button>
+          <button actions class="btn-outline btn-sm text-error!" (click)="supprimer()"><app-icon name="trash" [size]="15" /> Supprimer la formation</button>
         }
-      </div>
+      </app-entete-page>
 
       <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div class="flex min-w-0 flex-col gap-5">

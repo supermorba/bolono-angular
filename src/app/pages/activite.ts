@@ -8,7 +8,7 @@ import type { Activite, PageActivites, TypeActivite } from '../core/models';
 import { NotificationsService } from '../core/notifications.service';
 import { API_ADMIN, sansVides } from '../core/ressources';
 import { Icon } from '../shared/icon';
-import { EtatVide, Squelette } from '../shared/ui';
+import { EtatVide, Squelette, EntetePage } from '../shared/ui';
 import { STYLE_ACTIVITE, cheminLien, parametresLien } from '../shared/activite';
 
 const FILTRES: { valeur: TypeActivite | ''; libelle: string }[] = [
@@ -24,13 +24,11 @@ const FILTRES: { valeur: TypeActivite | ''; libelle: string }[] = [
 /** Journal complet de l'activité de la plateforme, chargé par pages successives. */
 @Component({
   selector: 'app-activite',
-  imports: [RouterLink, Icon, EtatVide, Squelette],
+  imports: [EntetePage, RouterLink, Icon, EtatVide, Squelette],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="text-2xl font-extrabold">Activité</h1>
-      <p class="mt-1 text-sm text-muted-strong">Tout ce qui se passe sur Bolono, du plus récent au plus ancien.</p>
-    </div>
+    <app-entete-page titre="Activité">
+    </app-entete-page>
 
     <div class="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-card p-1 sm:w-fit">
       @for (f of filtres; track f.valeur) {

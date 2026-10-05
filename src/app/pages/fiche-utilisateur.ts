@@ -1,6 +1,7 @@
 import { httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import type { Observable } from 'rxjs';
+import { RouterLink } from '@angular/router';
 import { AdminApi } from '../core/admin-api.service';
 import { AuthService } from '../core/auth.service';
 import { LIBELLES_ROLE, dateHeure, fcfa, nombre } from '../core/format';
@@ -16,7 +17,7 @@ type Action = 'suspension' | 'mentor' | 'admin' | 'suppression';
 /** Panneau latéral : fiche complète d'un utilisateur et actions d'administration. */
 @Component({
   selector: 'app-fiche-utilisateur',
-  imports: [Icon, Avatar, Badge, EtatVide, Squelette],
+  imports: [RouterLink, Icon, Avatar, Badge, EtatVide, Squelette],
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { '(document:keydown.escape)': 'fermer.emit()' },
   template: `
@@ -28,7 +29,7 @@ type Action = 'suspension' | 'mentor' | 'admin' | 'suppression';
       aria-label="Fiche utilisateur"
     >
       <div class="flex items-center justify-between border-b border-line px-6 py-4">
-        <h2 class="text-lg font-extrabold">Fiche utilisateur</h2>
+        <h2 class="text-lg font-bold">Fiche utilisateur</h2>
         <button class="rounded-lg p-1.5 text-muted hover:bg-card hover:text-brown" (click)="fermer.emit()" aria-label="Fermer">
           <app-icon name="x" [size]="20" />
         </button>
@@ -46,7 +47,7 @@ type Action = 'suspension' | 'mentor' | 'admin' | 'suppression';
           <div class="flex items-center gap-4">
             <app-avatar [photo]="u.photoUrl" [nom]="u.nom" [size]="72" />
             <div class="min-w-0">
-              <p class="truncate text-xl font-extrabold">{{ u.nom }}</p>
+              <p class="truncate text-xl font-bold">{{ u.nom }}</p>
               <div class="mt-1.5 flex flex-wrap gap-1.5">
                 <app-badge [ton]="tonProfil()">{{ profil() }}</app-badge>
                 @if (u.mentor && u.role === 'ADMIN') {
@@ -76,13 +77,28 @@ type Action = 'suspension' | 'mentor' | 'admin' | 'suppression';
           <div class="grid grid-cols-3 gap-2.5">
             @for (s of statistiques(); track s.libelle) {
               <div class="rounded-xl bg-ochre-surface px-3 py-2.5">
-                <p class="text-lg font-extrabold">{{ s.valeur }}</p>
+                <p class="text-lg font-bold">{{ s.valeur }}</p>
                 <p class="text-2xs leading-tight text-muted-strong">{{ s.libelle }}</p>
               </div>
             }
           </div>
           @if (d.activite.totalDepense > 0) {
             <p class="mt-2.5 text-sm text-muted-strong">Total des achats : <b class="text-brown">{{ fcfa(d.activite.totalDepense) }}</b></p>
+          }
+
+          @if (d.boutique && u.boutiqueId) {
+            <a
+              [routerLink]="['/boutiques']"
+              [queryParams]="{ id: u.boutiqueId }"
+              class="mt-5 flex items-center gap-3 rounded-xl border border-line px-3.5 py-3 transition hover:border-sand-deep hover:bg-ochre-surface"
+            >
+              <app-icon name="storefront" [size]="18" class="text-terracotta" />
+              <span class="min-w-0 flex-1">
+                <span class="block text-2xs text-muted">Boutique</span>
+                <span class="block truncate font-semibold">{{ d.boutique }}</span>
+              </span>
+              <app-icon name="caret-right" [size]="15" class="text-muted" />
+            </a>
           }
 
           <!-- Coordonnées -->

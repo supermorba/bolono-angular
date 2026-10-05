@@ -25,6 +25,11 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/utilisateurs').then((m) => m.UtilisateursPage),
       },
       {
+        path: 'boutiques',
+        title: 'Boutiques · Bolono Admin',
+        loadComponent: () => import('./pages/boutiques').then((m) => m.BoutiquesPage),
+      },
+      {
         path: 'produits',
         title: 'Produits · Bolono Admin',
         loadComponent: () => import('./pages/produits').then((m) => m.ProduitsPage),

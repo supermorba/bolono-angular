@@ -6,40 +6,28 @@ import { FicheProduit, LIBELLES_TYPE_PRODUIT } from './fiche-produit';
 import { dateCourte, fcfa, mediaUrl, nombre } from '../core/format';
 import { messageApi } from '../core/http';
 import type { Page, ProduitAdmin, StatutProduit } from '../core/models';
-import { NotificationsService } from '../core/notifications.service';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
+import { Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton, EntetePage } from '../shared/ui';
 
 const ONGLETS: { valeur: StatutProduit | ''; libelle: string }[] = [
-  { valeur: 'EN_ATTENTE', libelle: 'À valider' },
-  { valeur: 'EN_LIGNE', libelle: 'En ligne' },
-  { valeur: 'REFUSE', libelle: 'Refusés' },
   { valeur: '', libelle: 'Tous' },
+  { valeur: 'EN_LIGNE', libelle: 'En ligne' },
+  { valeur: 'MASQUE', libelle: 'Masqués' },
 ];
 
 const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
-  EN_ATTENTE: { libelle: 'À valider', ton: 'attention' },
   EN_LIGNE: { libelle: 'En ligne', ton: 'succes' },
-  REFUSE: { libelle: 'Refusé', ton: 'erreur' },
+  MASQUE: { libelle: 'Masqué', ton: 'erreur' },
 };
 
 @Component({
   selector: 'app-produits',
-  imports: [Icon, Badge, EtatVide, Pagination, Squelette, FicheProduit],
+  imports: [EntetePage, Icon, Badge, EtatVide, Pagination, Squelette, FicheProduit],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="flex items-center gap-3 text-2xl font-extrabold">
-        Produits
-        @if (liste.isLoading() && page()) {
-          <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta" aria-label="Mise à jour"></span>
-        }
-      </h1>
-      <p class="mt-1 text-sm text-muted-strong">
-        Un produit n'apparaît dans la boutique de l'application qu'une fois validé.
-      </p>
-    </div>
+    <app-entete-page titre="Produits" [chargement]="liste.isLoading() && !!page()">
+    </app-entete-page>
 
     <div class="mb-5 flex flex-wrap items-center gap-3">
       <div class="onglets" role="tablist">
@@ -71,7 +59,7 @@ const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
       @if (p.content.length) {
         <div class="grid grid-cols-1 items-start gap-5 transition-opacity sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" [class.opacity-60]="liste.isLoading()">
           @for (produit of p.content; track produit.id) {
-            <article class="card group flex flex-col overflow-hidden transition-shadow hover:shadow-lg">
+            <article class="card card-cliquable group flex flex-col overflow-hidden">
               <button
                 type="button"
                 class="relative block aspect-16/10 w-full shrink-0 overflow-hidden bg-sand text-left"
@@ -90,7 +78,7 @@ const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
                 }
                 <app-badge class="absolute top-2.5 left-2.5" [ton]="statuts[produit.statut].ton">{{ statuts[produit.statut].libelle }}</app-badge>
                 @if (produit.images.length > 1) {
-                  <span class="absolute top-2.5 right-2.5 rounded-full bg-brown/70 px-2 py-0.5 text-2xs font-semibold text-white">
+                  <span class="absolute top-2.5 right-2.5 rounded-sm bg-brown/70 px-2 py-0.5 text-2xs font-semibold text-white">
                     {{ produit.images.length }} photos
                   </span>
                 }
@@ -112,7 +100,7 @@ const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
                 </div>
 
                 <div class="flex items-end justify-between gap-2">
-                  <p class="text-lg leading-none font-extrabold text-terracotta">{{ fcfa(produit.prixFCFA) }}</p>
+                  <p class="text-lg leading-none font-bold text-terracotta">{{ fcfa(produit.prixFCFA) }}</p>
                   <p class="text-2xs text-muted-strong">
                     <span class="font-semibold text-brown">{{ produit.stock ?? '—' }}</span> {{ produit.uniteMesure ?? '' }} en stock ·
                     <span class="font-semibold text-brown">{{ nombre(produit.ventes) }}</span> vendus
@@ -125,14 +113,13 @@ const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
                 </p>
 
                 <div class="mt-auto flex gap-2 pt-1">
-                  @if (produit.statut !== 'EN_LIGNE') {
-                    <button class="btn-accent btn-sm flex-1" [disabled]="enCours() === produit.id" (click)="valider(produit, true)">
-                      <app-icon name="check" [size]="15" /> {{ produit.statut === 'REFUSE' ? 'Remettre en ligne' : 'Valider' }}
+                  @if (produit.statut === 'MASQUE') {
+                    <button class="btn-accent btn-sm flex-1" [disabled]="enCours() === produit.id" (click)="changerVisibilite(produit, true)">
+                      <app-icon name="check" [size]="15" /> Remettre en ligne
                     </button>
-                  }
-                  @if (produit.statut !== 'REFUSE') {
-                    <button class="btn-outline btn-sm flex-1" [disabled]="enCours() === produit.id" (click)="valider(produit, false)">
-                      <app-icon name="x" [size]="15" /> {{ produit.statut === 'EN_LIGNE' ? 'Retirer' : 'Refuser' }}
+                  } @else {
+                    <button class="btn-outline btn-sm flex-1" [disabled]="enCours() === produit.id" (click)="changerVisibilite(produit, false)">
+                      <app-icon name="x" [size]="15" /> Masquer
                     </button>
                   }
                 </div>
@@ -145,8 +132,8 @@ const STATUTS: Record<StatutProduit, { libelle: string; ton: Ton }> = {
         <div class="card">
           <app-etat-vide
             icone="package"
-            [titre]="statut() === 'EN_ATTENTE' ? 'Aucun produit à valider' : 'Aucun produit'"
-            [message]="statut() === 'EN_ATTENTE' ? 'Tous les produits proposés ont été examinés.' : 'Aucun produit ne correspond à ces critères.'"
+            [titre]="statut() === 'MASQUE' ? 'Aucun produit masqué' : 'Aucun produit'"
+            message="Aucun produit ne correspond à ces critères."
           />
         </div>
       }
@@ -167,7 +154,6 @@ export class ProduitsPage {
   private readonly api = inject(AdminApi);
   private readonly toast = inject(ToastService);
   private readonly confirmation = inject(ConfirmationService);
-  private readonly notifications = inject(NotificationsService);
   protected readonly fcfa = fcfa;
   protected readonly nombre = nombre;
   protected readonly dateCourte = dateCourte;
@@ -179,10 +165,10 @@ export class ProduitsPage {
   readonly statutInitial = input<string>(undefined, { alias: 'statut' });
 
   // ── Filtres (signaux) ────────────────────────────────────────────────────
-  /** Sans filtre explicite : la file de validation, sauf si l'on cherche un produit précis. */
+  /** Sans filtre explicite (?statut=) : tous les produits. */
   protected readonly statut = linkedSignal<StatutProduit | ''>(() => {
     const initial = this.statutInitial();
-    return initial && initial in STATUTS ? (initial as StatutProduit) : this.q() ? '' : 'EN_ATTENTE';
+    return initial && initial in STATUTS ? (initial as StatutProduit) : '';
   });
   protected readonly saisie = linkedSignal(() => this.q() ?? '');
   protected readonly recherche = linkedSignal(() => this.q() ?? '');
@@ -220,30 +206,30 @@ export class ProduitsPage {
     this.minuterie = setTimeout(() => this.recherche.set(q), 300);
   }
 
-  protected async valider(produit: ProduitAdmin, valide: boolean): Promise<void> {
+  /** Modération : masque un produit de la boutique ou l'y remet. */
+  protected async changerVisibilite(produit: ProduitAdmin, visible: boolean): Promise<void> {
     const { ok, notification } = await this.confirmation.demander(
-      valide
+      visible
         ? {
-            titre: `Mettre « ${produit.nom} » en ligne ?`,
-            message: 'Le produit sera visible par les acheteurs dans la boutique.',
-            confirmer: 'Mettre en ligne',
+            titre: `Remettre « ${produit.nom} » en ligne ?`,
+            message: 'Le produit sera de nouveau visible par les acheteurs dans la boutique.',
+            confirmer: 'Remettre en ligne',
             notification: produit.vendeur,
           }
         : {
-            titre: produit.statut === 'EN_LIGNE' ? `Retirer « ${produit.nom} » de la boutique ?` : `Refuser « ${produit.nom} » ?`,
+            titre: `Masquer « ${produit.nom} » ?`,
             message: 'Le produit ne sera plus visible par les acheteurs. Vous pourrez le remettre en ligne à tout moment.',
-            confirmer: produit.statut === 'EN_LIGNE' ? 'Retirer' : 'Refuser',
+            confirmer: 'Masquer',
             danger: true,
             notification: produit.vendeur,
           },
     );
     if (!ok) return;
     this.enCours.set(produit.id);
-    this.api.validerProduit(produit.id, valide, notification).subscribe({
+    this.api.changerVisibiliteProduit(produit.id, visible, notification).subscribe({
       next: () => {
         this.enCours.set(null);
-        this.toast.succes(valide ? `« ${produit.nom} » est en ligne.` : `« ${produit.nom} » a été retiré de la boutique.`);
-        this.notifications.rafraichir();
+        this.toast.succes(visible ? `« ${produit.nom} » est de nouveau en ligne.` : `« ${produit.nom} » a été masqué de la boutique.`);
         this.liste.reload();
       },
       error: (e) => {

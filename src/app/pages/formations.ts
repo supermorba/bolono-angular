@@ -8,40 +8,19 @@ import { messageApi } from '../core/http';
 import type { FormationStat } from '../core/models';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { ConfirmationService, EtatVide, Squelette } from '../shared/ui';
+import { ChiffresCles, ConfirmationService, EtatVide, Squelette, EntetePage, type ChiffreCle } from '../shared/ui';
 
 type Tri = 'apprenants' | 'tauxCompletion' | 'dateCreation';
 
 @Component({
   selector: 'app-formations',
-  imports: [RouterLink, Icon, EtatVide, Squelette],
+  imports: [EntetePage, ChiffresCles, RouterLink, Icon, EtatVide, Squelette],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-      <h1 class="flex items-center gap-3 text-2xl font-extrabold">
-        Formations
-        @if (liste.isLoading() && page()) {
-          <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta" aria-label="Mise à jour"></span>
-        }
-      </h1>
-      <p class="mt-1 text-sm text-muted-strong">Suivi des formations publiées par les mentors : apprenants et taux de complétion.</p>
-      </div>
-      <a routerLink="/formations/nouvelle" class="btn-accent"><app-icon name="play-circle" [size]="18" /> Nouvelle formation</a>
-    </div>
-
-    <!-- Synthèse -->
-    <div class="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
-      @for (s of synthese(); track s.libelle) {
-        <div class="card flex items-center gap-4 p-5">
-          <span class="flex h-12 w-12 items-center justify-center rounded-full" [class]="s.classes"><app-icon [name]="s.icone" [size]="24" /></span>
-          <div>
-            <p class="text-ms text-muted-strong">{{ s.libelle }}</p>
-            <p class="text-2xl font-extrabold">{{ s.valeur }}</p>
-          </div>
-        </div>
-      }
-    </div>
+    <app-entete-page titre="Formations" [chargement]="liste.isLoading() && !!page()">
+      <a actions routerLink="/formations/nouvelle" class="btn-accent"><app-icon name="play-circle" [size]="18" /> Nouvelle formation</a>
+      <app-chiffres-cles bas [chiffres]="synthese()" />
+    </app-entete-page>
 
     <div class="card p-4 sm:p-5">
       <div class="mb-4 flex flex-wrap items-center gap-3">
@@ -163,19 +142,14 @@ export class FormationsPage {
     );
   });
 
-  protected readonly synthese = computed(() => {
-    const liste = this.formations() ?? [];
-    const apprenants = liste.reduce((s, f) => s + f.apprenants, 0);
-    const termines = liste.reduce((s, f) => s + f.termines, 0);
+  protected readonly synthese = computed<ChiffreCle[]>(() => {
+    const liste = this.formations();
+    const apprenants = liste?.reduce((s, f) => s + f.apprenants, 0) ?? 0;
+    const termines = liste?.reduce((s, f) => s + f.termines, 0) ?? 0;
     return [
-      { libelle: 'Formations publiées', valeur: nombre(liste.length), icone: 'graduation-cap', classes: 'bg-info-surface text-info' },
-      { libelle: 'Inscriptions aux formations', valeur: nombre(apprenants), icone: 'users', classes: 'bg-terracotta-light text-terracotta' },
-      {
-        libelle: 'Complétion moyenne',
-        valeur: apprenants ? `${Math.round((termines / apprenants) * 100)}%` : '—',
-        icone: 'check-circle',
-        classes: 'bg-success-surface text-success',
-      },
+      { libelle: 'Formations publiées', valeur: liste ? nombre(liste.length) : null },
+      { libelle: 'Inscriptions aux formations', valeur: liste ? nombre(apprenants) : null },
+      { libelle: 'Complétion moyenne', valeur: !liste ? null : apprenants ? `${Math.round((termines / apprenants) * 100)}%` : '—' },
     ];
   });
 

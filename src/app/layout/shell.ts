@@ -43,57 +43,42 @@ export class Shell {
       ? 'Rechercher…'
       : 'Rechercher un utilisateur, un produit, une formation…';
 
-  protected readonly sections: { titre: string | null; entrees: EntreeMenu[] }[] = [
-    { titre: null, entrees: [{ libelle: 'Tableau de bord', icone: 'house', lien: '/' }] },
-    {
-      titre: 'Communauté',
-      entrees: [
-        { libelle: 'Utilisateurs', icone: 'user', lien: '/utilisateurs' },
-        {
-          libelle: 'Mentorat',
-          icone: 'users',
-          lien: '/mentorat',
-          compteur: () => this.notifications.compteurs()?.candidaturesEnAttente ?? 0,
-        },
-        { libelle: 'Publications', icone: 'chat-circle-text', lien: '/publications' },
-        { libelle: 'Statuts', icone: 'circle-dashed', lien: '/statuts' },
-        { libelle: 'Projets', icone: 'handshake', lien: '/projets' },
-      ],
-    },
-    {
-      titre: 'Boutique',
-      entrees: [
-        {
-          libelle: 'Produits',
-          icone: 'package',
-          lien: '/produits',
-          compteur: () => this.notifications.compteurs()?.produitsEnAttente ?? 0,
-        },
-        { libelle: 'Commandes', icone: 'shopping-cart', lien: '/commandes' },
-        { libelle: 'Paiements et litiges', icone: 'lock-simple', lien: '/paiements' },
-      ],
-    },
-    {
-      titre: 'Apprentissage',
-      entrees: [
-        { libelle: 'Formations', icone: 'play-circle', lien: '/formations' },
-        { libelle: 'Badges', icone: 'medal', lien: '/badges' },
-      ],
-    },
-    {
-      titre: 'Communication',
-      entrees: [
-        { libelle: 'Annonces', icone: 'megaphone', lien: '/annonces' },
-        {
-          libelle: 'Signalements',
-          icone: 'warning',
-          lien: '/signalements',
-          compteur: () => this.notifications.compteurs()?.publicationsSignalees ?? 0,
-        },
-        { libelle: 'Activité', icone: 'pulse', lien: '/activite' },
-      ],
-    },
-    { titre: null, entrees: [{ libelle: 'Paramètres', icone: 'gear-six', lien: '/parametres' }] },
+  /** Groupes de la navigation, séparés par un filet (Communauté, Boutique, Apprentissage, Communication). */
+  protected readonly groupes: EntreeMenu[][] = [
+    [{ libelle: 'Tableau de bord', icone: 'house', lien: '/' }],
+    [
+      { libelle: 'Utilisateurs', icone: 'user', lien: '/utilisateurs' },
+      {
+        libelle: 'Mentorat',
+        icone: 'users',
+        lien: '/mentorat',
+        compteur: () => this.notifications.compteurs()?.candidaturesEnAttente ?? 0,
+      },
+      { libelle: 'Publications', icone: 'chat-circle-text', lien: '/publications' },
+      { libelle: 'Statuts', icone: 'circle-dashed', lien: '/statuts' },
+      { libelle: 'Projets', icone: 'handshake', lien: '/projets' },
+    ],
+    [
+      { libelle: 'Boutiques', icone: 'storefront', lien: '/boutiques' },
+      { libelle: 'Produits', icone: 'package', lien: '/produits' },
+      { libelle: 'Commandes', icone: 'shopping-cart', lien: '/commandes' },
+      { libelle: 'Paiements et litiges', icone: 'lock-simple', lien: '/paiements', compteur: () => this.notifications.totalPaiements() },
+    ],
+    [
+      { libelle: 'Formations', icone: 'play-circle', lien: '/formations' },
+      { libelle: 'Badges', icone: 'medal', lien: '/badges' },
+    ],
+    [
+      { libelle: 'Annonces', icone: 'megaphone', lien: '/annonces' },
+      {
+        libelle: 'Signalements',
+        icone: 'warning',
+        lien: '/signalements',
+        compteur: () => this.notifications.compteurs()?.publicationsSignalees ?? 0,
+      },
+      { libelle: 'Activité', icone: 'pulse', lien: '/activite' },
+    ],
+    [{ libelle: 'Paramètres', icone: 'gear-six', lien: '/parametres' }],
   ];
 
   protected readonly barreOuverte = signal(false);
@@ -148,6 +133,21 @@ export class Shell {
   }
 
   /** Ouvre la page concernée, filtrée sur l'élément trouvé (et sa fiche si [id]). */
+  /** Entrée : la première rubrique qui a des résultats (utilisateurs, produits, formations). */
+  protected ouvrirPremiereRubrique(): void {
+    const r = this.resultats();
+    const q = this.recherche().trim();
+    if (!r || !q) return;
+    const lien = r.utilisateurs.length
+      ? '/utilisateurs'
+      : r.produits.length
+        ? '/produits'
+        : r.formations.length
+          ? '/formations'
+          : null;
+    if (lien) this.ouvrir(lien, q);
+  }
+
   protected ouvrir(lien: string, q?: string, id?: number): void {
     this.recherche.set('');
     this.resultats.set(null);

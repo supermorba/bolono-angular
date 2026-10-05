@@ -94,6 +94,9 @@
   --color-sidebar: #241712;
   /* Orange du logo : accent lisible sur le fond sombre de la barre latérale */
   --color-accent-clair: #f2a65a;
+  /* Variantes lisibles des états sur fond ébène (bandeaux d'en-tête) */
+  --color-success-clair: #8fd19e;
+  --color-error-clair: #f4a497;
 
   /* Courbe des animations d'interface, identique à l'app mobile (Curves.easeOutCubic) */
   --ease-bolono: cubic-bezier(0.33, 1, 0.68, 1);
@@ -104,7 +107,23 @@
   --color-chart-mentor: #9c7bc4;
   --color-chart-vert: #3e9a5e;
 
+  /*
+   * Rayons : angles à peine arrondis, pour un rendu sobre et professionnel.
+   * Toute l'échelle de Tailwind (rounded-sm … rounded-3xl) est resserrée ici :
+   * ne pas écrire de rayon en dur ailleurs. rounded-full reste réservé aux
+   * éléments réellement ronds (avatars, pastilles d'icônes, points).
+   */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+
   --shadow-card: 0 1px 2px rgb(38 27 22 / 0.04), 0 4px 16px rgb(38 27 22 / 0.04);
+  /* Menus, fenêtres et dialogues qui flottent au-dessus du contenu */
+  --shadow-flottant: 0 2px 6px rgb(38 27 22 / 0.06), 0 16px 40px rgb(38 27 22 / 0.14);
 }
 
 @layer base {
@@ -121,14 +140,24 @@
 }
 
 @layer components {
-  /* Carte standard du back-office */
+  /* Carte standard du back-office : plate, cernée d'un filet sable. Les
+     éléments flottants (menus, fenêtres) ajoutent shadow-flottant. */
   /* min-w-0 : dans une grille, une carte peut rétrécir sous la largeur de son
      contenu (graphiques SVG, tableaux) au lieu de déborder. */
   .card {
-    @apply min-w-0 rounded-2xl border border-line bg-surface shadow-card;
+    @apply min-w-0 rounded-2xl border border-sand/70 bg-surface;
+  }
+  /* Carte cliquable (produit, projet…) : le filet se fonce au survol, sans ombre. */
+  .card-cliquable {
+    @apply transition-colors duration-200 ease-bolono hover:border-sand-deep;
   }
   .card-title {
-    @apply text-base font-bold text-brown;
+    @apply flex items-center gap-2 text-base font-semibold text-brown;
+  }
+
+  /* En-tête de page (app-entete-page) : titre et actions, sur le fond de la page. */
+  .entete-page {
+    @apply mb-6 block;
   }
   .link-accent {
     @apply text-xs font-semibold text-terracotta hover:text-terracotta-dark hover:underline;
@@ -146,31 +175,20 @@
   }
 
   /*
-   * Navigation latérale — transposition de la barre d'onglets de l'app mobile :
-   * indicateur qui s'étire depuis son centre, icône qui grossit légèrement et
-   * passe du trait au plein en fondu (200 ms, easeOutCubic).
+   * Navigation latérale claire : lien actif en pastille ébène pleine (écho des
+   * en-têtes de page), icône qui passe du trait au plein en fondu (200 ms,
+   * easeOutCubic, comme la barre d'onglets de l'app mobile).
    */
   .nav-lien {
-    @apply relative flex items-center gap-3 rounded-lg px-3.5 py-2 text-sm text-white/70 outline-none
-      transition-colors duration-200 ease-bolono hover:bg-white/5 hover:text-white
-      focus-visible:ring-2 focus-visible:ring-white/40;
+    @apply flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-strong outline-none
+      transition-colors duration-200 ease-bolono hover:bg-ochre-surface hover:text-brown
+      focus-visible:ring-2 focus-visible:ring-terracotta/30;
   }
   .nav-lien.actif {
-    @apply font-semibold text-white;
-  }
-  /* Collé au bord gauche de la barre latérale (la nav a 12 px de marge). */
-  .nav-indicateur {
-    @apply absolute top-1/2 -left-3 h-7 w-1 -translate-y-1/2 scale-y-0 rounded-r-full bg-accent-clair
-      transition-transform duration-200 ease-bolono;
-  }
-  .nav-lien.actif .nav-indicateur {
-    @apply scale-y-100;
+    @apply bg-brown font-semibold text-white hover:bg-brown hover:text-white;
   }
   .nav-icone {
-    @apply relative size-5 shrink-0 transition-transform duration-200 ease-bolono;
-  }
-  .nav-lien.actif .nav-icone {
-    @apply scale-112;
+    @apply relative size-5 shrink-0;
   }
   .nav-icone > * {
     @apply absolute inset-0 transition-opacity duration-200 ease-bolono;
@@ -188,12 +206,12 @@
   /* Défilement discret de la barre latérale quand l'écran est bas. */
   .barre-defilante {
     scrollbar-width: thin;
-    scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+    scrollbar-color: rgb(38 27 22 / 0.15) transparent;
   }
 
   /* Champs */
   .input {
-    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-brown
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm font-normal text-brown
       placeholder:text-muted outline-none transition focus:border-terracotta focus:ring-2 focus:ring-terracotta/15;
   }
 
@@ -202,7 +220,7 @@
     @apply w-full text-left text-ms;
   }
   .table th {
-    @apply border-b border-line bg-ochre-surface/60 px-3 py-2.5 text-2xs font-semibold tracking-wide text-muted-strong uppercase;
+    @apply border-b border-sand px-3 py-2.5 text-2xs font-semibold tracking-[0.04em] text-muted-strong uppercase;
   }
   .table td {
     @apply border-b border-line/70 px-3 py-3 align-middle;
@@ -246,8 +264,6 @@
 /* Respect du réglage système « réduire les animations ». */
 @media (prefers-reduced-motion: reduce) {
   .nav-lien,
-  .nav-indicateur,
-  .nav-icone,
   .nav-icone > * {
     transition: none;
   }

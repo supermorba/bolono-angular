@@ -7,7 +7,7 @@ import type { CompteursUtilisateurs, Page, UtilisateurAdmin } from '../core/mode
 import { API_ADMIN, derniereValeur, sansVides } from '../core/ressources';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { Avatar, Badge, BarreChargement, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
+import { Avatar, Badge, BarreChargement, EtatVide, Pagination, Squelette, type Ton, EntetePage } from '../shared/ui';
 import { FicheUtilisateur } from './fiche-utilisateur';
 
 type Tri = { champ: 'dateInscription' | 'nom'; sens: 'asc' | 'desc' };
@@ -16,31 +16,26 @@ const TAILLE_PAGE = 15;
 
 @Component({
   selector: 'app-utilisateurs',
-  imports: [Icon, Avatar, Badge, BarreChargement, EtatVide, Pagination, Squelette, FicheUtilisateur],
+  imports: [EntetePage, Icon, Avatar, Badge, BarreChargement, EtatVide, Pagination, Squelette, FicheUtilisateur],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 class="text-2xl font-extrabold">Utilisateurs</h1>
-        <p class="mt-1 text-sm text-muted-strong">
-          @if (compteurs.hasValue()) {
-            {{ nombre(compteurs.value().tous) }} comptes inscrits sur Bolono
-            @if (compteurs.value().suspendus) {
-              · {{ nombre(compteurs.value().suspendus) }} suspendu{{ compteurs.value().suspendus > 1 ? 's' : '' }}
-            }
-          } @else {
-            Artisans, mentors, acheteurs et administrateurs inscrits sur Bolono.
-          }
-        </p>
-      </div>
-      <button class="btn-outline btn-sm" [disabled]="exportEnCours()" (click)="exporter()">
+    <app-entete-page titre="Utilisateurs">
+      @if (compteurs.hasValue()) {
+        {{ nombre(compteurs.value().tous) }} comptes inscrits sur Bolono
+        @if (compteurs.value().suspendus) {
+          · {{ nombre(compteurs.value().suspendus) }} suspendu{{ compteurs.value().suspendus > 1 ? 's' : '' }}
+        }
+      } @else {
+        Artisans, mentors, acheteurs et administrateurs inscrits sur Bolono.
+      }
+      <button actions class="btn-outline btn-sm" [disabled]="exportEnCours()" (click)="exporter()">
         @if (exportEnCours()) {
           <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-terracotta"></span> Export…
         } @else {
           <app-icon name="download-simple" [size]="16" /> Exporter (CSV)
         }
       </button>
-    </div>
+    </app-entete-page>
 
     <div class="card relative p-4 sm:p-5">
       <app-barre-chargement [actif]="liste.isLoading() && !!page()" />
@@ -57,7 +52,7 @@ const TAILLE_PAGE = 15;
               (click)="filtrerRole(o.valeur)"
             >
               {{ o.libelle }}
-              <span class="rounded-full bg-sand/60 px-1.5 text-2xs leading-4 text-brown">{{ o.compte ?? '…' }}</span>
+              <span class="rounded-sm bg-sand/60 px-1.5 text-2xs leading-4 text-brown">{{ o.compte ?? '…' }}</span>
             </button>
           }
         </div>
@@ -131,6 +126,9 @@ const TAILLE_PAGE = 15;
                         <app-badge [ton]="ton(u)">{{ profil(u) }}</app-badge>
                         @if (u.role === 'ADMIN' && u.mentor) {
                           <app-badge ton="accent">Mentor</app-badge>
+                        }
+                        @if (u.boutiqueId) {
+                          <app-badge ton="info">Vendeur</app-badge>
                         }
                       </div>
                     </td>
@@ -227,6 +225,7 @@ export class UtilisateursPage {
     return [
       { valeur: '', libelle: 'Tous', compte: c?.tous },
       { valeur: 'ARTISAN', libelle: 'Artisans', compte: c?.artisans },
+      { valeur: 'VENDEUR', libelle: 'Vendeurs', compte: c?.vendeurs },
       { valeur: 'MENTOR', libelle: 'Mentors', compte: c?.mentors },
       { valeur: 'ACHETEUR', libelle: 'Acheteurs', compte: c?.acheteurs },
       { valeur: 'ADMIN', libelle: 'Administrateurs', compte: c?.administrateurs },

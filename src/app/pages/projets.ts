@@ -8,7 +8,7 @@ import { API_ADMIN, derniereValeur, sansVides } from '../core/ressources';
 import { ToastService } from '../core/toast.service';
 import { Panneau } from '../shared/fenetres';
 import { Icon } from '../shared/icon';
-import { Avatar, Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
+import { Avatar, Badge, ConfirmationService, EtatVide, Pagination, Squelette, type Ton, EntetePage } from '../shared/ui';
 
 const STATUTS: Record<StatutProjet, { libelle: string; ton: Ton }> = {
   OUVERT: { libelle: 'Ouvert', ton: 'info' },
@@ -49,7 +49,7 @@ const TON_PARTICIPATION: Record<string, { libelle: string; ton: Ton }> = {
             <app-badge>{{ m }}</app-badge>
           }
         </div>
-        <h3 class="mt-2 text-xl font-extrabold">{{ p.titre }}</h3>
+        <h3 class="mt-2 text-xl font-bold">{{ p.titre }}</h3>
         <p class="mt-2 text-sm whitespace-pre-line text-muted-strong">{{ p.description }}</p>
         @if (d.audioUrl) {
           <audio [src]="mediaUrl(d.audioUrl)" controls preload="none" class="mt-3 h-9 w-full"></audio>
@@ -207,18 +207,11 @@ export class FicheProjet {
 
 @Component({
   selector: 'app-projets',
-  imports: [Icon, Avatar, Badge, EtatVide, Pagination, Squelette, FicheProjet],
+  imports: [EntetePage, Icon, Avatar, Badge, EtatVide, Pagination, Squelette, FicheProjet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="flex items-center gap-3 text-2xl font-extrabold">
-        Projets collaboratifs
-        @if (liste.isLoading() && page()) {
-          <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta" aria-label="Mise à jour"></span>
-        }
-      </h1>
-      <p class="mt-1 text-sm text-muted-strong">Projets proposés par les artisans pour réunir plusieurs savoir-faire.</p>
-    </div>
+    <app-entete-page titre="Projets collaboratifs" [chargement]="liste.isLoading() && !!page()">
+    </app-entete-page>
 
     <div class="card mb-5 flex flex-wrap items-center gap-3 p-3 sm:p-4">
       <div class="flex gap-1 overflow-x-auto rounded-xl bg-card p-1">
@@ -243,7 +236,7 @@ export class FicheProjet {
       @if (p.content.length) {
         <div class="grid grid-cols-1 items-start gap-4 transition-opacity md:grid-cols-2 xl:grid-cols-3" [class.opacity-60]="liste.isLoading()">
           @for (pr of p.content; track pr.id) {
-            <button class="card flex flex-col overflow-hidden text-left transition hover:-translate-y-0.5 hover:shadow-lg" (click)="selection.set(pr.id)">
+            <button class="card card-cliquable flex flex-col overflow-hidden text-left" (click)="selection.set(pr.id)">
               @if (mediaUrl(pr.photo); as src) {
                 <img [src]="src" alt="" class="aspect-video w-full object-cover" loading="lazy" />
               } @else {

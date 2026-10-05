@@ -49,7 +49,7 @@ export type Ton = 'neutre' | 'succes' | 'attention' | 'erreur' | 'info' | 'accen
   selector: 'app-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'inline-flex' },
-  template: `<span class="rounded-full px-2.5 py-0.5 text-2xs font-semibold whitespace-nowrap" [class]="classes()"
+  template: `<span class="rounded-sm px-2 py-0.5 text-2xs font-semibold whitespace-nowrap" [class]="classes()"
     ><ng-content
   /></span>`,
 })
@@ -76,15 +76,15 @@ export class Badge {
   template: `
     <span class="inline-flex items-center gap-1.5 text-xs whitespace-nowrap">
       @if (valeur() === null) {
-        <span class="font-semibold text-muted-strong">—</span>
+        <span class="font-semibold" [class]="surFonce() ? 'text-white/60' : 'text-muted-strong'">—</span>
       } @else {
-        <span class="inline-flex items-center gap-0.5 font-bold" [class]="valeur()! >= 0 ? 'text-success' : 'text-error'">
+        <span class="inline-flex items-center gap-0.5 font-bold" [class]="couleur()">
           <app-icon [name]="valeur()! >= 0 ? 'arrow-up' : 'arrow-down'" [size]="13" />
           {{ valeur()! > 0 ? '+' : '' }}{{ valeur() }}%
         </span>
       }
       @if (libelle()) {
-        <span class="text-muted">{{ libelle() }}</span>
+        <span [class]="surFonce() ? 'text-white/55' : 'text-muted'">{{ libelle() }}</span>
       }
     </span>
   `,
@@ -92,6 +92,87 @@ export class Badge {
 export class Evolution {
   readonly valeur = input<number | null>(null);
   readonly libelle = input('vs mois dernier');
+  /** Posé sur le bandeau ébène : variantes claires des couleurs d'état. */
+  readonly surFonce = input(false);
+  protected readonly couleur = computed(() => {
+    const hausse = this.valeur()! >= 0;
+    if (this.surFonce()) return hausse ? 'text-success-clair' : 'text-error-clair';
+    return hausse ? 'text-success' : 'text-error';
+  });
+}
+
+export interface ChiffreCle {
+  libelle: string;
+  /** null : en cours de chargement. */
+  valeur: string | null;
+  /** Évolution en % (null : pas de base de comparaison). Absente : ligne masquée. */
+  evolution?: number | null;
+}
+
+/**
+ * Chiffres-clés d'une page (slot [bas] d'app-entete-page) : nombres séparés
+ * par des filets, dans une carte.
+ */
+@Component({
+  selector: 'app-chiffres-cles',
+  imports: [Evolution],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'card mt-5 block overflow-hidden px-5 py-4' },
+  template: `
+    <!-- -ml-5 + overflow-hidden : le filet gauche de la première colonne sort du cadre, quel que soit le nombre de colonnes. -->
+    <dl class="-ml-5 grid grid-cols-2 gap-y-3" [class]="chiffres().length > 3 ? 'lg:grid-cols-4' : 'sm:grid-cols-3'">
+      @for (c of chiffres(); track c.libelle) {
+        <div class="min-w-0 border-l border-line py-0.5 pl-5">
+          <dt class="truncate text-xs text-muted-strong">{{ c.libelle }}</dt>
+          @if (c.valeur !== null) {
+            <dd class="mt-1 text-2xl leading-tight font-bold tabular-nums">{{ c.valeur }}</dd>
+            @if (c.evolution !== undefined) {
+              <dd><app-evolution class="mt-0.5 block" [valeur]="c.evolution" /></dd>
+            }
+          } @else {
+            <dd class="mt-2 h-7 w-20 animate-pulse rounded bg-card"></dd>
+            @if (c.evolution !== undefined) {
+              <dd class="mt-2 h-3 w-16 animate-pulse rounded bg-card"></dd>
+            }
+          }
+        </div>
+      }
+    </dl>
+  `,
+})
+export class ChiffresCles {
+  readonly chiffres = input.required<ChiffreCle[]>();
+}
+
+/**
+ * En-tête de page : titre, sous-titre facultatif (contenu projeté) et
+ * boutons ([actions]) ; un contenu pleine largeur (chiffres-clés…) va
+ * dans [bas].
+ */
+@Component({
+  selector: 'app-entete-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'entete-page' },
+  template: `
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="min-w-0">
+        <h1 class="flex items-center gap-3 text-xl font-bold sm:text-2xl">
+          <span class="min-w-0 truncate">{{ titre() }}</span>
+          @if (chargement()) {
+            <span class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-line border-t-terracotta" aria-label="Mise à jour"></span>
+          }
+        </h1>
+        <div class="mt-0.5 text-sm text-muted-strong empty:hidden"><ng-content /></div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 empty:hidden"><ng-content select="[actions]" /></div>
+    </div>
+    <ng-content select="[bas]" />
+  `,
+})
+export class EntetePage {
+  readonly titre = input.required<string>();
+  /** Petit indicateur de rechargement à côté du titre. */
+  readonly chargement = input(false);
 }
 
 /** Fine barre de progression indéterminée, en haut d'une carte, pendant un rechargement. */
@@ -134,8 +215,9 @@ export class Squelette {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex flex-col items-center justify-center gap-2 px-6 py-10 text-center">
-      <span class="flex h-12 w-12 items-center justify-center rounded-full bg-ochre-surface text-terracotta">
-        <app-icon [name]="icone()" [size]="24" />
+      <!-- Losange du motif bogolan, icône redressée -->
+      <span class="mb-2 flex size-11 rotate-45 items-center justify-center rounded-lg border border-sand bg-ochre-surface text-terracotta">
+        <app-icon class="-rotate-45" [name]="icone()" [size]="22" />
       </span>
       <p class="text-sm font-semibold text-brown">{{ titre() }}</p>
       @if (message()) {
@@ -229,9 +311,9 @@ export class ConfirmationService {
   host: { '(document:keydown.enter)': 'entree($event)', '(document:keydown.escape)': 'service.demande() && annuler()' },
   template: `
     @if (service.demande(); as d) {
-      <div class="fixed inset-0 z-50 flex items-center justify-center bg-brown/40 p-4 backdrop-blur-[2px]" (click)="annuler()">
-        <div class="card w-full max-w-md p-5 sm:p-6" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
-          <h2 class="text-lg font-extrabold">{{ d.titre }}</h2>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-brown/40 p-4" (click)="annuler()">
+        <div class="card w-full max-w-md p-5 shadow-flottant sm:p-6" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+          <h2 class="text-lg font-bold">{{ d.titre }}</h2>
           <p class="mt-2 text-sm text-muted-strong">{{ d.message }}</p>
           @if (d.champ) {
             <label class="mt-4 block text-xs font-semibold text-muted-strong">

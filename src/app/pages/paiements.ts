@@ -6,12 +6,14 @@ import { LIBELLES_ACTION_TRANSACTION, LIBELLES_FONDS, LIBELLES_TRANSACTION, date
 import { messageApi } from '../core/http';
 import type { DecisionLitige, PaiementEnAttente, StatutTransaction, TransactionAdmin } from '../core/models';
 import { API_ADMIN, rechargerEnDirect, sansVides } from '../core/ressources';
+import { NotificationsService } from '../core/notifications.service';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { Badge, BarreChargement, ConfirmationService, EtatVide, Squelette } from '../shared/ui';
+import { Badge, BarreChargement, ConfirmationService, EtatVide, Squelette, EntetePage } from '../shared/ui';
 import { LIBELLES_PAIEMENT, TON_TRANSACTION } from './commandes';
 
 type Onglet = 'paiements' | 'litiges' | 'rembourser' | 'verser' | 'toutes';
+const ONGLETS_VALIDES: Onglet[] = ['paiements', 'litiges', 'rembourser', 'verser', 'toutes'];
 
 /** Détail d'une transaction : articles, parties, litige et journal (qui fait foi). */
 @Component({
@@ -180,20 +182,19 @@ export class ConfirmationPaiement {
  */
 @Component({
   selector: 'app-paiements',
-  imports: [Icon, Badge, BarreChargement, EtatVide, Squelette, DetailTransaction, ConfirmationPaiement],
+  imports: [EntetePage, Icon, Badge, BarreChargement, EtatVide, Squelette, DetailTransaction, ConfirmationPaiement],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6">
-      <h1 class="text-2xl font-extrabold">Paiements et litiges</h1>
-      <p class="mt-1 text-sm text-muted-strong">
-        Rapprochez les paiements reçus, tranchez les litiges, effectuez remboursements et versements.
-      </p>
-    </div>
+    <app-entete-page titre="Paiements et litiges">
+    </app-entete-page>
 
     <div class="onglets mb-4 sm:w-fit" role="tablist">
       @for (o of onglets; track o.valeur) {
         <button class="onglet" [class.onglet-actif]="onglet() === o.valeur" role="tab" [attr.aria-selected]="onglet() === o.valeur" (click)="onglet.set(o.valeur)">
           {{ o.libelle }}
+          @if (o.compte && o.compte() > 0) {
+            <span class="min-w-5 rounded-full bg-terracotta px-1.5 text-center text-2xs leading-5 font-bold text-white">{{ o.compte() }}</span>
+          }
         </button>
       }
     </div>
@@ -233,7 +234,7 @@ export class ConfirmationPaiement {
         @if (onglet() === 'toutes') {
           <div class="mb-4 flex flex-wrap gap-1.5">
             @for (s of statuts; track s.valeur) {
-              <button class="rounded-full border px-3 py-1 text-xs font-semibold"
+              <button class="rounded-md border px-3 py-1 text-xs font-semibold"
                 [class]="filtreStatut() === s.valeur ? 'border-terracotta bg-terracotta-light text-terracotta' : 'border-line text-muted-strong'"
                 (click)="filtreStatut.set(s.valeur)">{{ s.libelle }}</button>
             }
@@ -314,6 +315,7 @@ export class ConfirmationPaiement {
 export class PaiementsPage {
   private readonly api = inject(AdminApi);
   private readonly toast = inject(ToastService);
+  private readonly notifications = inject(NotificationsService);
   private readonly confirmation = inject(ConfirmationService);
   protected readonly fcfa = fcfa;
   protected readonly dateHeure = dateHeure;
@@ -322,11 +324,12 @@ export class PaiementsPage {
   protected readonly libellesPaiement: Record<string, string> = LIBELLES_PAIEMENT;
   protected readonly tons = TON_TRANSACTION;
 
-  protected readonly onglets: { valeur: Onglet; libelle: string }[] = [
-    { valeur: 'paiements', libelle: 'Paiements à confirmer' },
-    { valeur: 'litiges', libelle: 'Litiges' },
-    { valeur: 'rembourser', libelle: 'À rembourser' },
-    { valeur: 'verser', libelle: 'À verser' },
+  /** Compteurs de la cloche, repris dans les onglets. */
+  protected readonly onglets: { valeur: Onglet; libelle: string; compte?: () => number }[] = [
+    { valeur: 'paiements', libelle: 'Paiements à confirmer', compte: () => this.notifications.compteurs()?.paiementsAConfirmer ?? 0 },
+    { valeur: 'litiges', libelle: 'Litiges', compte: () => this.notifications.compteurs()?.litigesEnCours ?? 0 },
+    { valeur: 'rembourser', libelle: 'À rembourser', compte: () => this.notifications.compteurs()?.remboursementsAEffectuer ?? 0 },
+    { valeur: 'verser', libelle: 'À verser', compte: () => this.notifications.compteurs()?.versementsAEffectuer ?? 0 },
     { valeur: 'toutes', libelle: 'Toutes les transactions' },
   ];
   protected readonly statuts: { valeur: StatutTransaction | ''; libelle: string }[] = [
@@ -334,7 +337,12 @@ export class PaiementsPage {
     ...(Object.keys(LIBELLES_TRANSACTION) as StatutTransaction[]).map((s) => ({ valeur: s, libelle: LIBELLES_TRANSACTION[s] })),
   ];
 
-  protected readonly onglet = signal<Onglet>('paiements');
+  /** Onglet ouvert depuis la cloche (?onglet=). */
+  readonly ongletInitial = input<string>(undefined, { alias: 'onglet' });
+  protected readonly onglet = linkedSignal<Onglet>(() => {
+    const o = this.ongletInitial();
+    return ONGLETS_VALIDES.includes(o as Onglet) ? (o as Onglet) : 'paiements';
+  });
   protected readonly filtreStatut = signal<StatutTransaction | ''>('');
   protected readonly ouverte = linkedSignal<Onglet, string | null>({ source: this.onglet, computation: () => null });
   protected readonly enCours = signal<string | null>(null);

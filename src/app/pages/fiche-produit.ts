@@ -71,8 +71,8 @@ export const LIBELLES_TYPE_PRODUIT: Record<TypeProduit, string> = {
           <p class="mt-5 text-2xs font-semibold tracking-wide text-muted uppercase">
             {{ p.categorie ?? 'Sans catégorie' }} · {{ p.type ? typesProduit[p.type] : '—' }}
           </p>
-          <h3 class="mt-1 text-xl font-extrabold">{{ p.nom }}</h3>
-          <p class="mt-2 text-2xl font-extrabold text-terracotta">{{ fcfa(p.prixFCFA) }}</p>
+          <h3 class="mt-1 text-xl font-bold">{{ p.nom }}</h3>
+          <p class="mt-2 text-2xl font-bold text-terracotta">{{ fcfa(p.prixFCFA) }}</p>
           @if (p.description) {
             <p class="mt-3 text-sm whitespace-pre-line text-muted-strong">{{ p.description }}</p>
           }

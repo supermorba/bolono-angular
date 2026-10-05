@@ -1,23 +1,18 @@
-<div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-  <div>
-    <h1 class="text-2xl font-extrabold tracking-tight sm:text-chiffre">Bonjour {{ prenom() }} 👋</h1>
-    <p class="mt-1 text-sm text-muted-strong">Voici un aperçu de l'activité sur la plateforme Bolono.</p>
-  </div>
-  <div class="flex flex-wrap items-center gap-3">
-    <p class="flex items-center gap-2 text-sm text-muted-strong">
-      {{ aujourdhui }}
-      <app-icon name="calendar-blank" [size]="18" />
-    </p>
-    <button class="btn-outline btn-sm" [disabled]="exportEnCours() || !bornes()" (click)="exporterRapport()" title="Rapport CSV de la période sélectionnée dans « Ventes »">
-      @if (exportEnCours()) {
-        <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta"></span>
-      } @else {
-        <app-icon name="download-simple" [size]="16" />
-      }
-      Exporter le rapport
-    </button>
-  </div>
-</div>
+<app-entete-page titre="Tableau de bord">
+  {{ aujourdhui }}
+  <button actions class="btn-outline btn-sm" [disabled]="exportEnCours() || !bornes()" (click)="exporterRapport()" title="Rapport CSV de la période sélectionnée dans « Ventes »">
+    @if (exportEnCours()) {
+      <span class="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-terracotta"></span>
+    } @else {
+      <app-icon name="download-simple" [size]="16" />
+    }
+    Exporter le rapport
+  </button>
+
+  @if (!erreur()) {
+    <app-chiffres-cles bas [chiffres]="kpis()" />
+  }
+</app-entete-page>
 
 @if (erreur(); as message) {
   <div class="card">
@@ -29,40 +24,6 @@
   <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
     <!-- ── Colonne principale ─────────────────────────────────────── -->
     <div class="@container flex min-w-0 flex-col gap-5">
-      <!-- Indicateurs -->
-      <div class="grid grid-cols-1 gap-4 @md:grid-cols-2 @4xl:grid-cols-4 @4xl:gap-5">
-        @for (
-          kpi of [
-            { libelle: 'Utilisateurs inscrits', icone: 'users', classes: 'bg-terracotta-light text-terracotta', ind: donnees()?.kpis?.utilisateurs },
-            { libelle: 'Produits en ligne', icone: 'package', classes: 'bg-terracotta-light text-terracotta', ind: donnees()?.kpis?.produitsEnLigne },
-            { libelle: 'Formations publiées', icone: 'graduation-cap', classes: 'bg-info-surface text-info', ind: donnees()?.kpis?.formations },
-            { libelle: 'Commandes ce mois', icone: 'shopping-cart', classes: 'bg-terracotta-light text-terracotta', ind: donnees()?.kpis?.commandesMois },
-          ];
-          track kpi.libelle
-        ) {
-          <div class="card p-4 sm:p-5">
-            <div class="flex items-center gap-3.5">
-              <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full" [class]="kpi.classes">
-                <app-icon [name]="kpi.icone" [size]="24" />
-              </span>
-              <div class="min-w-0 flex-1">
-                <p class="text-ms leading-tight text-muted-strong">{{ kpi.libelle }}</p>
-                @if (kpi.ind; as ind) {
-                  <p class="mt-1 text-chiffre leading-tight font-extrabold">{{ nombre(ind.valeur) }}</p>
-                } @else {
-                  <app-squelette class="mt-2" [hauteur]="28" />
-                }
-              </div>
-            </div>
-            @if (kpi.ind; as ind) {
-              <app-evolution class="mt-3 block" [valeur]="ind.evolution" />
-            } @else {
-              <app-squelette class="mt-3 w-1/2" [hauteur]="12" />
-            }
-          </div>
-        }
-      </div>
-
       <!-- Inscriptions + répartition -->
       <div class="grid grid-cols-1 gap-5 @2xl:grid-cols-12">
         <section class="card relative p-4 sm:p-5 @2xl:col-span-7">
@@ -164,7 +125,7 @@
           @if (ventesPeriode.error() && !ventesAffichees()) {
             <p class="mt-4 text-xs text-error">{{ erreurVentes() }}</p>
           } @else if (ventes(); as v) {
-            <p class="mt-3 text-chiffre font-extrabold">{{ v.total }}</p>
+            <p class="mt-3 text-chiffre font-bold">{{ v.total }}</p>
             <app-evolution class="block" [valeur]="v.evolution" [libelle]="libellePeriode()" />
             <p class="mt-1 text-xs text-muted-strong">{{ nombre(v.commandes) }} commande{{ v.commandes > 1 ? 's' : '' }} · panier moyen {{ v.panierMoyen }}</p>
             <app-histogramme
@@ -305,6 +266,56 @@
 
     <!-- ── Colonne latérale ───────────────────────────────────────── -->
     <aside class="grid min-w-0 grid-cols-1 content-start gap-5 md:grid-cols-2 xl:grid-cols-1">
+      <!-- Ventes sécurisées : argent en jeu et tâches de l'équipe -->
+      <section class="card p-4 sm:p-5">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="card-title">Ventes sécurisées</h2>
+          <a routerLink="/paiements" class="link-accent">Gérer</a>
+        </div>
+        @if (synthese.hasValue()) {
+          @let s = synthese.value();
+          <p class="text-xs text-muted-strong">En séquestre</p>
+          <p class="text-chiffre leading-tight font-extrabold">{{ fcfa(s.montantBloque) }}</p>
+          <dl class="mt-3 grid grid-cols-2 gap-2.5 text-xs">
+            <div class="rounded-xl bg-ochre-surface px-3 py-2">
+              <dt class="text-muted-strong">À verser aux vendeurs</dt>
+              <dd class="mt-0.5 text-sm font-bold">{{ fcfa(s.montantAVerser) }}</dd>
+            </div>
+            <div class="rounded-xl bg-ochre-surface px-3 py-2">
+              <dt class="text-muted-strong">Commissions acquises</dt>
+              <dd class="mt-0.5 text-sm font-bold">{{ fcfa(s.commissionsAcquises) }}</dd>
+            </div>
+          </dl>
+          <ul class="-mx-2 mt-3 divide-y divide-line/70">
+            @for (
+              t of [
+                { n: s.paiementsAConfirmer, onglet: 'paiements', icone: 'hand-coins', libelle: 'Paiements à confirmer' },
+                { n: s.litigesEnCours, onglet: 'litiges', icone: 'scales', libelle: 'Litiges à trancher' },
+                { n: s.aRembourser, onglet: 'rembourser', icone: 'arrow-u-up-left', libelle: 'Remboursements', montant: s.montantARembourser },
+                { n: s.aVerser, onglet: 'verser', icone: 'money', libelle: 'Versements' },
+              ];
+              track t.onglet
+            ) {
+              <li>
+                <a routerLink="/paiements" [queryParams]="{ onglet: t.onglet }" class="group flex items-center gap-3 rounded-lg px-2 py-2 text-ms transition hover:bg-ochre-surface">
+                  <app-icon [name]="t.icone" [size]="18" [class]="t.n ? 'text-terracotta' : 'text-muted'" />
+                  <span class="flex-1" [class.text-muted]="!t.n">{{ t.libelle }}</span>
+                  @if (t.n) {
+                    <span class="min-w-5 rounded-full bg-terracotta px-1.5 text-center text-2xs leading-5 font-bold text-white">{{ t.n }}</span>
+                  } @else {
+                    <span class="text-2xs text-muted">—</span>
+                  }
+                </a>
+              </li>
+            }
+          </ul>
+        } @else if (synthese.error()) {
+          <p class="text-xs text-error">Synthèse indisponible.</p>
+        } @else {
+          <app-squelette [hauteur]="200" />
+        }
+      </section>
+
       <section class="card p-4 sm:p-5 md:row-span-2 xl:row-span-1">
         <div class="mb-2 flex items-center justify-between">
           <h2 class="card-title">Activité récente</h2>
@@ -340,47 +351,44 @@
 
       <section class="card p-4 sm:p-5">
         <h2 class="card-title mb-3">Actions rapides</h2>
-        <div class="grid grid-cols-2 gap-2.5">
+        <ul class="-mx-2 divide-y divide-line/70">
           @for (a of actionsRapides; track a.libelle) {
-            <a
-              [routerLink]="a.lien"
-              [queryParams]="a.params"
-              class="flex min-w-0 flex-col items-center gap-1.5 rounded-xl border border-line bg-surface px-2 py-3 text-center text-xs font-medium transition hover:border-sand-deep hover:bg-ochre-surface"
-            >
-              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-terracotta-light text-terracotta">
-                <app-icon [name]="a.icone" [size]="18" />
-              </span>
-              <span class="leading-tight">{{ a.libelle }}</span>
-            </a>
+            <li>
+              <a [routerLink]="a.lien" [queryParams]="a.params" class="group flex items-center gap-3 rounded-lg px-2 py-2.5 text-ms font-medium transition hover:bg-ochre-surface">
+                <app-icon [name]="a.icone" [size]="19" class="text-terracotta" />
+                <span class="flex-1">{{ a.libelle }}</span>
+                <app-icon name="arrow-right" [size]="15" class="text-muted transition group-hover:text-terracotta" />
+              </a>
+            </li>
           }
-        </div>
+        </ul>
       </section>
 
-      <!-- Bandeau communauté -->
-      <section class="relative overflow-hidden rounded-2xl bg-brown text-white shadow-card">
-        <img src="images/artisan.jpg" alt="" class="absolute inset-0 h-full w-full object-cover object-right opacity-70" />
-        <div class="absolute inset-0 bg-gradient-to-r from-brown via-brown/80 to-brown/10"></div>
-        <div class="relative p-5">
-          <p class="max-w-52 text-lg leading-snug font-extrabold">Ensemble, valorisons le savoir-faire malien</p>
-          <div class="mt-5 grid grid-cols-3 gap-2">
-            @for (
-              s of [
-                { libelle: 'Artisans', icone: 'hand-heart', ind: donnees()?.communaute?.artisans },
-                { libelle: 'Mentors', icone: 'medal', ind: donnees()?.communaute?.mentors },
-                { libelle: 'Acheteurs', icone: 'storefront', ind: donnees()?.communaute?.acheteurs },
-              ];
-              track s.libelle
-            ) {
-              <div class="rounded-xl bg-black/35 p-2.5 backdrop-blur-sm">
-                <p class="flex items-center gap-1 text-2xs text-white/75"><app-icon [name]="s.icone" [size]="13" class="text-ochre" /> {{ s.libelle }}</p>
-                <p class="mt-1 text-lg font-extrabold">{{ s.ind ? nombre(s.ind.valeur) : '—' }}</p>
-                @if (s.ind && s.ind.evolution !== null) {
-                  <p class="text-2xs font-semibold text-[#8fd19e]">{{ s.ind.evolution >= 0 ? '+' : '' }}{{ s.ind.evolution }}%</p>
-                }
-              </div>
-            }
-          </div>
-        </div>
+      <!-- Communauté -->
+      <section class="card p-5">
+        <h2 class="card-title">Communauté</h2>
+        <dl class="mt-4 divide-y divide-line">
+          @for (
+            s of [
+              { libelle: 'Artisans', icone: 'hand-heart', ind: donnees()?.communaute?.artisans },
+              { libelle: 'Mentors', icone: 'medal', ind: donnees()?.communaute?.mentors },
+              { libelle: 'Acheteurs', icone: 'storefront', ind: donnees()?.communaute?.acheteurs },
+            ];
+            track s.libelle
+          ) {
+            <div class="flex items-center gap-3 py-2.5">
+              <dt class="flex flex-1 items-center gap-2 text-sm text-muted-strong">
+                <app-icon [name]="s.icone" [size]="16" class="text-muted" /> {{ s.libelle }}
+              </dt>
+              <dd class="text-base font-bold tabular-nums">{{ s.ind ? nombre(s.ind.valeur) : '—' }}</dd>
+              @if (s.ind && s.ind.evolution !== null) {
+                <dd class="w-14 text-right text-xs font-semibold" [class]="s.ind.evolution >= 0 ? 'text-success' : 'text-error'">
+                  {{ s.ind.evolution >= 0 ? '+' : '' }}{{ s.ind.evolution }}%
+                </dd>
+              }
+            </div>
+          }
+        </dl>
       </section>
     </aside>
   </div>

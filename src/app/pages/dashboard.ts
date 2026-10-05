@@ -1,19 +1,18 @@
 import { httpResource } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AuthService } from '../core/auth.service';
 import { LIBELLES_COMMANDE, compact, dateHeure, eur, fcfa, ilYa, mediaUrl, nombre } from '../core/format';
 import { messageApi } from '../core/http';
 import { AdminApi } from '../core/admin-api.service';
 import { enregistrerFichier, isoJour } from '../core/telechargement';
 import { ToastService } from '../core/toast.service';
-import type { Dashboard, StatutCommande, VentesPeriode } from '../core/models';
-import { API_ADMIN, derniereValeur } from '../core/ressources';
+import type { Dashboard, StatutCommande, SyntheseVentes, VentesPeriode } from '../core/models';
+import { API_ADMIN, derniereValeur, rechargerEnDirect } from '../core/ressources';
 import { FormsModule } from '@angular/forms';
 import { Anneau, Courbes, Histogramme, type Part } from '../shared/charts';
 import { STYLE_ACTIVITE, cheminLien, parametresLien } from '../shared/activite';
 import { Icon } from '../shared/icon';
-import { Badge, BarreChargement, EtatVide, Evolution, Squelette, type Ton } from '../shared/ui';
+import { Badge, BarreChargement, ChiffresCles, EntetePage, EtatVide, Evolution, Squelette, type ChiffreCle, type Ton } from '../shared/ui';
 
 export const TON_COMMANDE: Record<StatutCommande, Ton> = {
   EN_ATTENTE: 'attention',
@@ -26,12 +25,11 @@ export const TON_COMMANDE: Record<StatutCommande, Ton> = {
 
 @Component({
   selector: 'app-dashboard',
-  imports: [FormsModule, RouterLink, Icon, Badge, BarreChargement, Evolution, Squelette, EtatVide, Courbes, Anneau, Histogramme],
+  imports: [FormsModule, RouterLink, Icon, Badge, BarreChargement, ChiffresCles, EntetePage, Evolution, Squelette, EtatVide, Courbes, Anneau, Histogramme],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard.html',
 })
 export class DashboardPage {
-  protected readonly auth = inject(AuthService);
   private readonly api = inject(AdminApi);
   private readonly toast = inject(ToastService);
 
@@ -60,13 +58,23 @@ export class DashboardPage {
     this.tableau.error() && !this.donnees() ? messageApi(this.tableau.error(), 'Impossible de charger le tableau de bord.') : null,
   );
   protected readonly devise = signal<'FCFA' | 'EUR'>('FCFA');
+  /** Argent en séquestre et tâches de l'équipe (ventes sécurisées). */
+  protected readonly synthese = httpResource<SyntheseVentes>(() => `${API_ADMIN}/transactions/synthese`);
 
   protected readonly aujourdhui = (() => {
     const texte = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    return texte.replace(/(^|\s)\p{L}/gu, (l) => l.toUpperCase());
+    return texte.charAt(0).toUpperCase() + texte.slice(1);
   })();
 
-  protected readonly prenom = computed(() => this.auth.profil()?.nom?.split(/\s+/)[0] ?? 'Admin');
+  protected readonly kpis = computed<ChiffreCle[]>(() => {
+    const k = this.donnees()?.kpis;
+    return [
+      { libelle: 'Utilisateurs inscrits', ind: k?.utilisateurs },
+      { libelle: 'Produits en ligne', ind: k?.produitsEnLigne },
+      { libelle: 'Formations publiées', ind: k?.formations },
+      { libelle: 'Commandes ce mois', ind: k?.commandesMois },
+    ].map(({ libelle, ind }) => ({ libelle, valeur: ind ? nombre(ind.valeur) : null, evolution: ind?.evolution ?? null }));
+  });
 
   protected readonly inscriptions = computed(() => {
     const d = this.donnees();
@@ -142,13 +150,17 @@ export class DashboardPage {
   protected readonly formatAxe = compact;
 
   protected readonly actionsRapides = [
-    { libelle: 'Valider des produits', icone: 'package', lien: '/produits', params: { statut: 'EN_ATTENTE' } },
+    { libelle: 'Produits', icone: 'package', lien: '/produits', params: {} },
     { libelle: 'Candidatures', icone: 'seal-check', lien: '/mentorat', params: {} },
     { libelle: 'Utilisateurs', icone: 'user-plus', lien: '/utilisateurs', params: {} },
     { libelle: 'Formations', icone: 'play-circle', lien: '/formations', params: {} },
     { libelle: 'Commandes', icone: 'shopping-cart', lien: '/commandes', params: {} },
     { libelle: 'Signalements', icone: 'warning', lien: '/signalements', params: {} },
   ];
+
+  constructor() {
+    rechargerEnDirect(this.synthese);
+  }
 
   protected exporterRapport(): void {
     const b = this.bornes();

@@ -20,14 +20,21 @@ function largeurObservee(): () => number {
   return largeur;
 }
 
-/** Maximum « rond » pour l'axe vertical, et ses graduations. */
-function echelle(max: number, graduations = 5): { max: number; pas: number[] } {
+/**
+ * Maximum « rond » pour l'axe vertical, et ses graduations. [entiers] : pour
+ * des comptages (inscriptions…), pas de graduation fractionnaire — avec peu de
+ * données, l'axe compte alors 0, 1, 2… au lieu de 0, 0,2, 0,4…
+ */
+function echelle(max: number, graduations = 5, entiers = false): { max: number; pas: number[] } {
+  if (entiers && max > 0 && max < graduations) graduations = Math.max(1, Math.ceil(max));
   if (max <= 0) return { max: graduations, pas: Array.from({ length: graduations + 1 }, (_, i) => i) };
   const brut = max / graduations;
   const puissance = 10 ** Math.floor(Math.log10(brut));
-  const pas = [1, 2, 2.5, 5, 10].map((m) => m * puissance).find((p) => p >= brut) ?? brut;
-  const haut = pas * graduations;
-  return { max: haut, pas: Array.from({ length: graduations + 1 }, (_, i) => i * pas) };
+  let pas = [1, 2, 2.5, 5, 10].map((m) => m * puissance).find((p) => p >= brut) ?? brut;
+  if (entiers) pas = Math.max(1, Math.ceil(pas));
+  // Arrondi : sans lui, 3 × 0,2 donne 0,6000000000000001 (étiquette interminable).
+  const arrondi = (v: number) => Number(v.toPrecision(12));
+  return { max: arrondi(pas * graduations), pas: Array.from({ length: graduations + 1 }, (_, i) => arrondi(i * pas)) };
 }
 
 export interface Serie {
@@ -117,7 +124,8 @@ export class Courbes {
   protected readonly haut = 8;
   protected readonly bas = computed(() => this.hauteur() - 24);
 
-  protected readonly axe = computed(() => echelle(Math.max(0, ...this.series().flatMap((s) => s.valeurs))));
+  /** Les courbes servent à des comptages : graduations entières. */
+  protected readonly axe = computed(() => echelle(Math.max(0, ...this.series().flatMap((s) => s.valeurs)), 5, true));
 
   protected readonly etiquettesX = computed(() => {
     const n = this.etiquettes().length;
@@ -194,10 +202,10 @@ export interface Part {
     </svg>
     <div class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
       @if (partSurvolee(); as p) {
-        <span class="text-xl font-extrabold">{{ p.valeur }}</span>
+        <span class="text-xl font-bold">{{ p.valeur }}</span>
         <span class="text-2xs text-muted-strong">{{ p.nom }}</span>
       } @else {
-        <span class="text-2xl font-extrabold">{{ total() }}</span>
+        <span class="text-2xl font-bold">{{ total() }}</span>
         <span class="text-2xs text-muted-strong">au total</span>
       }
     </div>

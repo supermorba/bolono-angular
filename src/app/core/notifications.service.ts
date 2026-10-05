@@ -6,7 +6,8 @@ import { ToastService } from './toast.service';
 
 /**
  * Éléments en attente d'une action de l'administrateur (candidatures de
- * mentorat, produits à valider, publications signalées). Partagé par la
+ * mentorat, publications signalées, paiements, litiges, remboursements et
+ * versements). Partagé par la
  * cloche de la barre du haut et les compteurs de la barre latérale.
  *
  * Mis à jour en direct par le canal temps réel ; une interrogation toutes les
@@ -24,9 +25,14 @@ export class NotificationsService {
   readonly revision = signal(0);
 
   readonly compteurs = signal<Notifications | null>(null);
+  /** Tâches d'argent (« Paiements et litiges »). */
+  readonly totalPaiements = computed(() => {
+    const c = this.compteurs();
+    return c ? c.paiementsAConfirmer + c.litigesEnCours + c.remboursementsAEffectuer + c.versementsAEffectuer : 0;
+  });
   readonly total = computed(() => {
     const c = this.compteurs();
-    return c ? c.candidaturesEnAttente + c.produitsEnAttente + c.publicationsSignalees : 0;
+    return c ? c.candidaturesEnAttente + c.publicationsSignalees + this.totalPaiements() : 0;
   });
 
   demarrer(): void {

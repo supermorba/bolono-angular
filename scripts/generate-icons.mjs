@@ -12,14 +12,14 @@ const ICONS = [
   'check', 'seal-check', 'info', 'truck', 'credit-card', 'image', 'book-open', 'lock-simple',
   'hand-heart', 'medal', 'chart-bar', 'list', 'download-simple', 'megaphone', 'chat-circle-text',
   'circle-dashed', 'handshake', 'pencil-simple', 'plus', 'tag', 'text-align-left', 'pulse', 'link-simple',
-  'broadcast', 'star',
+  'broadcast', 'star', 'hand-coins', 'scales', 'arrow-u-up-left', 'money', 'vault', 'percent', 'timer',
 ];
 // Variantes pleines : uniquement celles utilisées avec weight="fill" (barre
 // latérale, choix d'audience, pastilles), pour alléger le bundle initial.
 const PLEINES = new Set([
   'house', 'user', 'users', 'users-three', 'chat-circle-text', 'circle-dashed', 'handshake', 'package',
   'shopping-cart', 'play-circle', 'medal', 'megaphone', 'warning', 'pulse', 'gear-six', 'flag',
-  'check-circle', 'hand-heart', 'chalkboard-teacher',
+  'check-circle', 'hand-heart', 'chalkboard-teacher', 'storefront', 'lock-simple',
 ]);
 
 const entries = [];

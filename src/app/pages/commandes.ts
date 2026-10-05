@@ -11,7 +11,7 @@ import { API_ADMIN, derniereValeur, rechargerEnDirect, sansVides } from '../core
 import { enregistrerFichier } from '../core/telechargement';
 import { ToastService } from '../core/toast.service';
 import { Icon } from '../shared/icon';
-import { Badge, BarreChargement, EtatVide, Pagination, Squelette, type Ton } from '../shared/ui';
+import { Badge, BarreChargement, EtatVide, Pagination, Squelette, type Ton, EntetePage } from '../shared/ui';
 import { TON_COMMANDE } from './dashboard';
 
 export const LIBELLES_PAIEMENT: Record<ModePaiement, string> = {
@@ -122,22 +122,18 @@ export class DetailCommande {
 
 @Component({
   selector: 'app-commandes',
-  imports: [FormsModule, Icon, Badge, BarreChargement, EtatVide, Pagination, Squelette, DetailCommande],
+  imports: [EntetePage, FormsModule, Icon, Badge, BarreChargement, EtatVide, Pagination, Squelette, DetailCommande],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h1 class="flex items-center gap-3 text-2xl font-extrabold">Commandes</h1>
-        <p class="mt-1 text-sm text-muted-strong">Consultation des commandes : chaque vendeur gère la sienne.</p>
-      </div>
-      <button class="btn-outline btn-sm" [disabled]="exportEnCours()" (click)="exporter()">
+    <app-entete-page titre="Commandes">
+      <button actions class="btn-outline btn-sm" [disabled]="exportEnCours()" (click)="exporter()">
         @if (exportEnCours()) {
           <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-terracotta"></span> Export…
         } @else {
           <app-icon name="download-simple" [size]="16" /> Exporter (CSV)
         }
       </button>
-    </div>
+    </app-entete-page>
 
     <div class="onglets mb-4 sm:w-fit" role="tablist">
       @for (o of onglets; track o.valeur) {
@@ -203,9 +199,6 @@ export class DetailCommande {
                     <td class="text-right font-semibold whitespace-nowrap">{{ fcfa(c.montant) }}</td>
                     <td class="hidden text-xs whitespace-nowrap text-muted-strong xl:table-cell">
                       {{ c.paiement?.mode ? libellesPaiement[c.paiement!.mode!] : '—' }}
-                      @if (c.paiement?.valide) {
-                        <app-icon name="check-circle" weight="fill" [size]="14" class="ml-0.5 align-[-2px] text-success" />
-                      }
                     </td>
                     <td><app-badge [ton]="tons[c.statut]">{{ libelles[c.statut] }}</app-badge></td>
                     <td class="hidden text-xs whitespace-nowrap text-muted-strong md:table-cell">
@@ -302,7 +295,10 @@ export class CommandesPage {
     this.minuterie = setTimeout(() => this.recherche.set(texte), 300);
   }
 
+  /** Remet tous les filtres à zéro (statut, recherche, dates). */
   protected reinitialiser(): void {
+    clearTimeout(this.minuterie);
+    this.statut.set('');
     this.saisie.set('');
     this.recherche.set('');
     this.du.set('');

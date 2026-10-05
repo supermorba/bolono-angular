@@ -9,8 +9,8 @@ export type EtatConnexion = 'deconnecte' | 'connexion' | 'connecte';
 /**
  * Canal temps réel du back-office (STOMP sur WebSocket, /ws).
  *
- * Reçoit les événements admin (nouvelle candidature, signalement, produit à
- * valider, commande) dès qu'ils se produisent. Le jeton Firebase est relu à
+ * Reçoit les événements admin (nouvelle candidature, signalement, commande…)
+ * dès qu'ils se produisent. Le jeton Firebase est relu à
  * chaque (re)connexion : il expire au bout d'une heure. La bibliothèque STOMP
  * est chargée à la demande, hors du bundle initial.
  */
