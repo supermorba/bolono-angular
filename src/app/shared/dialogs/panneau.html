@@ -1,0 +1,24 @@
+<div
+  class="fixed inset-0 z-40 bg-brown/30 transition-opacity starting:opacity-0"
+  (click)="fermer.emit()"
+></div>
+<aside
+  class="fixed inset-y-0 right-0 z-50 flex w-full flex-col bg-surface shadow-2xl transition-transform duration-200 starting:translate-x-full"
+  [class]="largeur()"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="titre()"
+>
+  <div class="flex items-center justify-between gap-3 border-b border-line px-5 py-4 sm:px-6">
+    <h2 class="truncate text-lg font-bold">{{ titre() }}</h2>
+    <button
+      class="rounded-lg p-1.5 text-muted hover:bg-card hover:text-brown"
+      (click)="fermer.emit()"
+      aria-label="Fermer"
+    >
+      <app-icon name="x" [size]="20" />
+    </button>
+  </div>
+  <div class="flex-1 overflow-y-auto px-5 py-5 sm:px-6"><ng-content /></div>
+  <ng-content select="[pied]" />
+</aside>

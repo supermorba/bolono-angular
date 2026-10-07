@@ -1,0 +1,135 @@
+<app-entete-page rubrique="Boutique" titre="Boutiques">
+  Les boutiques ouvertes par les vendeurs. Masquez celles qui ne respectent pas les règles : elles
+  disparaissent avec leurs produits.
+</app-entete-page>
+
+<div class="card relative p-4 sm:p-5">
+  <app-barre-chargement [actif]="liste.isLoading() && !!page()" />
+
+  <div class="mb-4 flex flex-wrap items-center gap-3">
+    <div class="onglets" role="tablist" aria-label="Statut">
+      @for (o of onglets(); track o.valeur) {
+        <button
+          class="onglet"
+          [class.onglet-actif]="statut() === o.valeur"
+          role="tab"
+          [attr.aria-selected]="statut() === o.valeur"
+          (click)="statut.set(o.valeur)"
+        >
+          {{ o.libelle }}
+          <span class="rounded-full bg-sand/60 px-1.5 text-2xs leading-4 text-brown">{{
+            o.compte ?? '…'
+          }}</span>
+        </button>
+      }
+    </div>
+    <div class="relative w-full sm:ml-auto sm:max-w-xs">
+      <app-icon
+        name="magnifying-glass"
+        [size]="16"
+        class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted"
+      />
+      <input
+        type="search"
+        class="input py-2! pl-9!"
+        placeholder="Boutique ou vendeur"
+        [value]="saisie()"
+        (input)="saisir($any($event.target).value)"
+        aria-label="Rechercher une boutique"
+      />
+    </div>
+  </div>
+
+  @if (liste.error() && !page()) {
+    <app-etat-vide icone="warning" titre="Chargement impossible" [message]="erreur()">
+      <button class="btn-accent btn-sm mt-2" (click)="liste.reload()">Réessayer</button>
+    </app-etat-vide>
+  } @else if (page(); as p) {
+    @if (p.content.length) {
+      <div class="overflow-x-auto transition-opacity" [class.opacity-60]="liste.isLoading()">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Boutique</th>
+              <th class="hidden md:table-cell">Vendeur</th>
+              <th class="hidden sm:table-cell text-right">Produits</th>
+              <th class="hidden lg:table-cell text-right">Ventes</th>
+              <th class="hidden lg:table-cell text-right">Chiffre d'affaires</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (b of p.content; track b.id) {
+              <tr
+                class="cursor-pointer"
+                [class.bg-terracotta-light!]="selection() === b.id"
+                (click)="selection.set(b.id)"
+                (keydown.enter)="selection.set(b.id)"
+                tabindex="0"
+              >
+                <td>
+                  <div class="flex max-w-60 items-center gap-3 sm:max-w-none">
+                    <app-logo-boutique [url]="b.logoUrl" [taille]="38" />
+                    <div class="min-w-0">
+                      <p class="truncate font-semibold">{{ b.nom }}</p>
+                      <p class="truncate text-xs text-muted">
+                        {{ b.categorie || '—' }} · {{ b.ville || '—' }}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td class="hidden md:table-cell">
+                  <p class="truncate font-medium">{{ b.proprietaire }}</p>
+                  @if (b.proprietaireSuspendu) {
+                    <p class="text-2xs font-semibold text-error">Compte suspendu</p>
+                  }
+                </td>
+                <td class="hidden text-right whitespace-nowrap sm:table-cell">
+                  <span class="font-semibold">{{ nombre(b.produitsEnLigne) }}</span>
+                  <span class="text-muted">/ {{ nombre(b.produits) }}</span>
+                </td>
+                <td class="hidden text-right lg:table-cell">{{ nombre(b.ventes) }}</td>
+                <td class="hidden text-right whitespace-nowrap lg:table-cell">
+                  {{ fcfa(b.chiffreAffaires) }}
+                </td>
+                <td>
+                  <app-badge [ton]="statuts[b.statut].ton">{{
+                    statuts[b.statut].libelle
+                  }}</app-badge>
+                </td>
+                <td class="text-right">
+                  <app-icon name="caret-right" [size]="16" class="text-muted" />
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-pagination
+        [page]="p.number"
+        [pages]="p.totalPages"
+        [total]="p.totalElements"
+        (changer)="numero.set($event)"
+      />
+    } @else {
+      <app-etat-vide
+        icone="storefront"
+        titre="Aucune boutique"
+        [message]="
+          recherche()
+            ? 'Aucune boutique ne correspond à « ' + recherche() + ' ».'
+            : 'Aucune boutique ne correspond à ce filtre.'
+        "
+      />
+    }
+  } @else {
+    @for (i of lignesSquelette; track i) {
+      <app-squelette class="my-2" [hauteur]="44" />
+    }
+  }
+</div>
+
+@if (selection(); as id) {
+  <app-fiche-boutique [id]="id" (fermer)="selection.set(null)" (modifie)="rafraichir()" />
+}

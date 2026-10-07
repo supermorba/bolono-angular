@@ -1,0 +1,19 @@
+<span
+  class="inline-flex items-center justify-center rounded-full bg-terracotta-light text-terracotta"
+  [style.width.px]="taille()"
+  [style.height.px]="taille()"
+  [attr.title]="icone()?.libelle ?? null"
+>
+  @if (contenu(); as svg) {
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 256 256"
+      fill="currentColor"
+      [attr.width]="taille() * 0.58"
+      [attr.height]="taille() * 0.58"
+      [innerHTML]="svg"
+    ></svg>
+  } @else {
+    <span class="font-bold" [style.font-size.px]="taille() * 0.42">{{ initiale() }}</span>
+  }
+</span>

@@ -1,0 +1,23 @@
+@if (details.isLoading()) {
+  <p class="py-2 text-xs text-muted">Chargement…</p>
+} @else if (details.error()) {
+  <p class="py-2 text-xs text-error">Détail indisponible.</p>
+} @else {
+  <ul class="divide-y divide-line rounded-xl border border-line bg-ivory">
+    @for (d of details.value(); track $index) {
+      <li class="px-3.5 py-2.5 text-ms">
+        <p>
+          <b>{{ d.auteur }}</b> <span class="text-muted">· {{ dateHeure(d.date) }}</span>
+        </p>
+        <p class="text-muted-strong">Motif : {{ d.motif }}</p>
+        @if (d.details) {
+          <p class="mt-0.5 text-xs text-muted italic">« {{ d.details }} »</p>
+        }
+      </li>
+    } @empty {
+      <li class="px-3.5 py-2.5 text-xs text-muted">
+        Signalements antérieurs à l'enregistrement des motifs : aucun détail disponible.
+      </li>
+    }
+  </ul>
+}

@@ -1,0 +1,18 @@
+@if (src() && !enErreur()) {
+  <img
+    [src]="src()"
+    [alt]="nom()"
+    class="rounded-full object-cover ring-2 ring-surface"
+    [style.width.px]="size()"
+    [style.height.px]="size()"
+    (error)="enErreur.set(true)"
+  />
+} @else {
+  <span
+    class="flex items-center justify-center rounded-full bg-sand font-bold text-brown ring-2 ring-surface"
+    [style.width.px]="size()"
+    [style.height.px]="size()"
+    [style.font-size.px]="size() * 0.38"
+    >{{ lettres() }}</span
+  >
+}

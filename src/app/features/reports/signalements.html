@@ -1,0 +1,115 @@
+<app-entete-page titre="Signalements" [chargement]="liste.isLoading() && !!page()">
+  Masquage automatique à partir de 3 signalements, en attendant votre décision.
+</app-entete-page>
+
+@if (liste.error() && !page()) {
+  <div class="card">
+    <app-etat-vide icone="warning" titre="Chargement impossible" [message]="erreur()">
+      <button class="btn-accent btn-sm mt-2" (click)="liste.reload()">Réessayer</button>
+    </app-etat-vide>
+  </div>
+} @else if (page(); as p) {
+  @if (p.content.length) {
+    <div class="flex flex-col gap-4 transition-opacity" [class.opacity-60]="liste.isLoading()">
+      @for (s of p.content; track s.publicationId) {
+        <article class="card flex flex-col gap-4 p-4 sm:p-5 md:flex-row">
+          @if (mediaUrl(s.media); as src) {
+            <img
+              [src]="src"
+              alt=""
+              class="h-32 w-full shrink-0 rounded-xl object-cover md:w-44"
+              loading="lazy"
+            />
+          }
+          <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <span
+                class="inline-flex items-center gap-1 rounded-sm bg-error-surface px-2.5 py-0.5 text-2xs font-bold text-error"
+              >
+                <app-icon name="flag" weight="fill" [size]="12" />
+                {{ s.nbSignalements }} signalement{{ s.nbSignalements > 1 ? 's' : '' }}
+              </span>
+              <app-badge [ton]="statuts[s.statut].ton">{{ statuts[s.statut].libelle }}</app-badge>
+            </div>
+            <h2 class="mt-2 font-bold">{{ s.titre || 'Publication sans titre' }}</h2>
+            <p class="mt-1 text-sm text-muted-strong">{{ s.extrait || '—' }}</p>
+            <p class="mt-2 text-xs text-muted">
+              Par {{ s.auteur ?? 'auteur inconnu' }} · publiée le {{ dateHeure(s.datePublication) }}
+            </p>
+            @if (s.motifs.length) {
+              <div class="mt-2.5 flex flex-wrap gap-1.5">
+                @for (m of s.motifs; track m.motif) {
+                  <span
+                    class="rounded-sm bg-error-surface px-2.5 py-0.5 text-2xs font-semibold text-error"
+                    >{{ m.motif }} ×{{ m.nombre }}</span
+                  >
+                }
+              </div>
+            }
+            <button
+              class="link-accent mt-2.5"
+              (click)="
+                detailOuvert.set(detailOuvert() === s.publicationId ? null : s.publicationId)
+              "
+            >
+              {{
+                detailOuvert() === s.publicationId
+                  ? 'Masquer le détail'
+                  : 'Voir le détail des signalements'
+              }}
+            </button>
+            @if (detailOuvert() === s.publicationId) {
+              <app-detail-signalements class="mt-2 block" [publicationId]="s.publicationId" />
+            }
+          </div>
+          <div class="flex shrink-0 flex-row gap-2 md:w-44 md:flex-col md:justify-center">
+            @if (s.statut !== 'PUBLIEE') {
+              <button
+                class="btn-outline btn-sm flex-1 md:flex-none"
+                [disabled]="enCours() === s.publicationId"
+                (click)="moderer(s, 'PUBLIEE')"
+              >
+                <app-icon name="eye" [size]="15" /> Rétablir
+              </button>
+            } @else {
+              <button
+                class="btn-outline btn-sm flex-1 md:flex-none"
+                [disabled]="enCours() === s.publicationId"
+                (click)="moderer(s, 'PUBLIEE')"
+              >
+                <app-icon name="check" [size]="15" /> Ignorer
+              </button>
+            }
+            @if (s.statut !== 'MASQUEE') {
+              <button
+                class="btn-danger btn-sm flex-1 md:flex-none"
+                [disabled]="enCours() === s.publicationId"
+                (click)="moderer(s, 'MASQUEE')"
+              >
+                <app-icon name="eye-slash" [size]="15" /> Masquer
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </div>
+    <app-pagination
+      [page]="p.number"
+      [pages]="p.totalPages"
+      [total]="p.totalElements"
+      (changer)="numero.set($event)"
+    />
+  } @else {
+    <div class="card">
+      <app-etat-vide
+        icone="check-circle"
+        titre="Aucun signalement"
+        message="La communauté n'a signalé aucune publication."
+      />
+    </div>
+  }
+} @else {
+  @for (i of [1, 2, 3]; track i) {
+    <app-squelette class="mb-4" [hauteur]="150" />
+  }
+}

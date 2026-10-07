@@ -1,0 +1,22 @@
+<!-- -ml-5 + overflow-hidden : le filet gauche de la première colonne sort du cadre, quel que soit le nombre de colonnes. -->
+<dl
+  class="-ml-5 grid grid-cols-2 gap-y-3"
+  [class]="chiffres().length > 3 ? 'lg:grid-cols-4' : 'sm:grid-cols-3'"
+>
+  @for (c of chiffres(); track c.libelle) {
+    <div class="min-w-0 border-l border-line py-0.5 pl-5">
+      <dt class="truncate text-xs text-muted-strong">{{ c.libelle }}</dt>
+      @if (c.valeur !== null) {
+        <dd class="mt-1 text-2xl leading-tight font-bold tabular-nums">{{ c.valeur }}</dd>
+        @if (c.evolution !== undefined) {
+          <dd><app-evolution class="mt-0.5 block" [valeur]="c.evolution" /></dd>
+        }
+      } @else {
+        <dd class="mt-2 h-7 w-20 animate-pulse rounded bg-card"></dd>
+        @if (c.evolution !== undefined) {
+          <dd class="mt-2 h-3 w-16 animate-pulse rounded bg-card"></dd>
+        }
+      }
+    </div>
+  }
+</dl>

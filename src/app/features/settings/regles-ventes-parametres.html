@@ -1,0 +1,78 @@
+<h2 class="card-title mb-1">Règles des ventes sécurisées</h2>
+<p class="mb-5 text-sm text-muted-strong">
+  Délais laissés à chaque partie et commission de la plateforme. Ils se règlent dans la
+  configuration du serveur (préfixe <code class="rounded bg-card px-1 text-xs">securise.</code>) et
+  s'appliquent aux nouvelles transactions.
+</p>
+@if (regles.error() && !regles.hasValue()) {
+  <app-etat-vide icone="warning" titre="Règles indisponibles">
+    <button class="btn-accent btn-sm mt-2" (click)="regles.reload()">Réessayer</button>
+  </app-etat-vide>
+} @else if (regles.hasValue()) {
+  @let r = regles.value();
+  <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    @for (
+      l of [
+        {
+          icone: 'credit-card',
+          libelle: 'Paiement par l’acheteur',
+          valeur: duree(r.delaiPaiementHeures),
+          aide: 'après la commande, sinon elle expire',
+        },
+        {
+          icone: 'check-circle',
+          libelle: 'Réponse du vendeur',
+          valeur: duree(r.delaiAcceptationHeures),
+          aide: 'pour accepter ou refuser après paiement',
+        },
+        {
+          icone: 'truck',
+          libelle: 'Expédition',
+          valeur: duree(r.delaiExpeditionHeures),
+          aide: 'après acceptation',
+        },
+        {
+          icone: 'clock',
+          libelle: 'Livraison d’office',
+          valeur: duree(r.delaiConfirmationHeures),
+          aide: 'sans litige après l’expédition',
+        },
+        {
+          icone: 'eye',
+          libelle: 'Inspection',
+          valeur: duree(r.delaiInspectionHeures),
+          aide: 'pour contester après la remise',
+        },
+        {
+          icone: 'bell',
+          libelle: 'Rappel',
+          valeur: duree(r.rappelAvantHeures),
+          aide: 'avant chaque échéance',
+        },
+        {
+          icone: 'percent',
+          libelle: 'Commission',
+          valeur: commission(r.commissionPourMille),
+          aide: 'prélevée sur chaque vente',
+        },
+        {
+          icone: 'shopping-cart',
+          libelle: 'Achats non engagés',
+          valeur: r.maxEnAttenteParAcheteur + ' max.',
+          aide: 'par acheteur, pour protéger les stocks',
+        },
+      ];
+      track l.libelle
+    ) {
+      <div class="rounded-xl border border-line p-4">
+        <dt class="flex items-center gap-2 text-xs font-semibold text-muted-strong">
+          <app-icon [name]="l.icone" [size]="15" class="text-terracotta" /> {{ l.libelle }}
+        </dt>
+        <dd class="mt-1.5 text-xl font-extrabold">{{ l.valeur }}</dd>
+        <dd class="text-2xs text-muted">{{ l.aide }}</dd>
+      </div>
+    }
+  </dl>
+} @else {
+  <app-squelette [hauteur]="180" />
+}

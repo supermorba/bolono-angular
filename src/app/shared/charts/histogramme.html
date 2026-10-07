@@ -1,0 +1,55 @@
+@if (largeur() > 0) {
+  <svg [attr.width]="largeur()" [attr.height]="hauteur()" (mouseleave)="survol.set(null)">
+    <defs>
+      <linearGradient [attr.id]="'barre-' + uid" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--color-terracotta)" />
+        <stop offset="100%" stop-color="var(--color-ochre)" />
+      </linearGradient>
+    </defs>
+    @for (g of axe().pas; track g) {
+      <line
+        [attr.x1]="gauche"
+        [attr.x2]="largeur()"
+        [attr.y1]="y(g)"
+        [attr.y2]="y(g)"
+        stroke="var(--color-line)"
+        stroke-dasharray="3 4"
+      />
+      <text [attr.x]="gauche - 8" [attr.y]="y(g) + 4" text-anchor="end" class="fill-muted text-2xs">
+        {{ format()(g) }}
+      </text>
+    }
+    @for (v of valeurs(); track $index; let i = $index) {
+      <rect
+        [attr.x]="xBarre(i)"
+        [attr.y]="y(v)"
+        [attr.width]="largeurBarre()"
+        [attr.height]="bas() - y(v)"
+        rx="3"
+        [attr.fill]="'url(#barre-' + uid + ')'"
+        [attr.opacity]="survol() === null || survol() === i ? (v > 0 ? 1 : 0.3) : 0.45"
+        (mouseenter)="survol.set(i)"
+      />
+      @if (afficherEtiquette(i)) {
+        <text
+          [attr.x]="xBarre(i) + largeurBarre() / 2"
+          [attr.y]="hauteur() - 4"
+          text-anchor="middle"
+          class="fill-muted text-2xs"
+        >
+          {{ etiquettes()[i] }}
+        </text>
+      }
+    }
+  </svg>
+  @if (survol() !== null) {
+    <div
+      class="pointer-events-none absolute z-10 -translate-x-1/2 rounded-lg bg-brown px-3 py-2 text-xs whitespace-nowrap text-white shadow-lg"
+      [style.left.px]="xBarre(survol()!) + largeurBarre() / 2"
+      [style.top.px]="Math.max(0, y(valeurs()[survol()!]) - 44)"
+    >
+      <p class="font-semibold">{{ etiquettes()[survol()!] }}</p>
+      <p>{{ formatInfobulle()(valeurs()[survol()!]) }}</p>
+    </div>
+  }
+}

@@ -1,0 +1,49 @@
+<app-modale [titre]="badge() ? 'Modifier le badge' : 'Nouveau badge'" (fermer)="fermer.emit()">
+  <form id="form-badge" class="space-y-3.5" (submit)="$event.preventDefault(); enregistrer()">
+    <div>
+      <p class="mb-1.5 text-xs font-semibold text-muted-strong">Icône</p>
+      <app-televersement
+        categorie="BADGE_ICONE"
+        [(url)]="modele.urlIcone"
+        hauteurApercu="h-32 object-contain! bg-surface"
+        hauteurVide="h-28"
+      />
+    </div>
+    <label class="block text-xs font-semibold text-muted-strong">
+      Intitulé
+      <input
+        class="input mt-1"
+        name="intitule"
+        [(ngModel)]="modele.intitule"
+        required
+        maxlength="120"
+        placeholder="Maître teinturier"
+      />
+    </label>
+    <label class="block text-xs font-semibold text-muted-strong">
+      Catégorie (facultative)
+      <input
+        class="input mt-1"
+        name="categorie"
+        [(ngModel)]="modele.categorie"
+        maxlength="60"
+        placeholder="Teinture"
+      />
+    </label>
+    <label class="block text-xs font-semibold text-muted-strong">
+      Description
+      <textarea
+        class="input mt-1 min-h-20"
+        name="description"
+        [(ngModel)]="modele.description"
+        maxlength="2000"
+      ></textarea>
+    </label>
+  </form>
+  <ng-container pied>
+    <button class="btn-outline" (click)="fermer.emit()">Annuler</button>
+    <button class="btn-accent" type="submit" form="form-badge" [disabled]="enregistrement()">
+      Enregistrer
+    </button>
+  </ng-container>
+</app-modale>

@@ -1,0 +1,84 @@
+<app-entete-page titre="Paramètres"> </app-entete-page>
+
+<div class="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-card p-1 sm:w-fit">
+  @for (o of onglets; track o.cle) {
+    <a
+      class="onglet"
+      [class.onglet-actif]="ongletActif() === o.cle"
+      [routerLink]="[]"
+      [queryParams]="{ onglet: o.cle }"
+    >
+      <app-icon [name]="o.icone" [size]="16" /> {{ o.libelle }}
+    </a>
+  }
+</div>
+
+@if (ongletActif() === 'categories') {
+  <section class="card p-4 sm:p-6"><app-categories-parametres /></section>
+} @else if (ongletActif() === 'textes') {
+  <section class="card p-4 sm:p-6"><app-textes-parametres /></section>
+} @else if (ongletActif() === 'ventes') {
+  <section class="card p-4 sm:p-6"><app-regles-ventes /></section>
+} @else {
+  <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <section class="card p-6">
+      <h2 class="card-title mb-5">Mon compte</h2>
+      @if (auth.profil(); as p) {
+        <div class="flex items-center gap-4">
+          <app-avatar [photo]="p.photoUrl" [nom]="p.nom" [size]="64" />
+          <div>
+            <p class="text-lg font-bold">{{ p.nom }}</p>
+            <p class="text-sm text-muted-strong">{{ p.email }}</p>
+            <app-badge class="mt-1.5" ton="accent">Administrateur</app-badge>
+          </div>
+        </div>
+        <p class="mt-5 text-sm text-muted-strong">
+          Membre depuis le {{ dateCourte(p.dateInscription) }}.
+        </p>
+      }
+      <button class="btn-outline mt-6" (click)="deconnexion()">
+        <app-icon name="sign-out" [size]="18" /> Se déconnecter
+      </button>
+    </section>
+
+    <section class="card p-6">
+      <h2 class="card-title mb-5">Connexion à la plateforme</h2>
+      <dl class="space-y-4 text-sm">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+          <dt class="text-muted-strong">API Bolono</dt>
+          <dd class="flex flex-wrap items-center gap-2 font-mono text-xs break-all">
+            {{ apiUrl }}
+            @switch (etatApi()) {
+              @case ('ok') {
+                <app-badge ton="succes">Joignable</app-badge>
+              }
+              @case ('ko') {
+                <app-badge ton="erreur">Injoignable</app-badge>
+              }
+              @default {
+                <app-badge>Vérification…</app-badge>
+              }
+            }
+          </dd>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <dt class="text-muted-strong">Projet Firebase</dt>
+          <dd class="font-mono text-xs">{{ projetFirebase }}</dd>
+        </div>
+      </dl>
+      <button class="btn-outline btn-sm mt-5" (click)="verifier()">
+        <app-icon name="arrows-clockwise" [size]="15" /> Vérifier à nouveau
+      </button>
+    </section>
+
+    <section class="card p-6 lg:col-span-2">
+      <h2 class="card-title mb-3">Ajouter un administrateur</h2>
+      <p class="text-sm text-muted-strong">
+        Les comptes sont créés depuis l'application mobile. Pour donner l'accès au back-office à une
+        personne, ouvrez sa fiche dans
+        <a routerLink="/utilisateurs" class="link-accent">Utilisateurs</a> et utilisez le bouton «
+        Accès admin ».
+      </p>
+    </section>
+  </div>
+}

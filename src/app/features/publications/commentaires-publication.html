@@ -1,0 +1,41 @@
+<app-panneau
+  [titre]="'Commentaires · ' + (publication().titre || 'Publication')"
+  (fermer)="fermer.emit()"
+>
+  @if (commentaires.error()) {
+    <app-etat-vide icone="warning" titre="Chargement impossible" [message]="erreur()">
+      <button class="btn-accent btn-sm mt-2" (click)="commentaires.reload()">Réessayer</button>
+    </app-etat-vide>
+  } @else if (commentaires.hasValue()) {
+    <ul class="flex flex-col gap-3">
+      @for (c of commentaires.value(); track c.id) {
+        <li class="group flex gap-3 rounded-xl border border-line p-3">
+          <app-avatar [photo]="c.auteur?.photoUrl" [nom]="c.auteur?.nom" [size]="34" />
+          <div class="min-w-0 flex-1">
+            <p class="text-ms">
+              <b>{{ c.auteur?.nom ?? 'Compte supprimé' }}</b>
+              <span class="text-xs text-muted">· {{ ilYa(c.date) }}</span>
+            </p>
+            <p class="mt-0.5 text-sm break-words whitespace-pre-line text-muted-strong">
+              {{ c.texte }}
+            </p>
+          </div>
+          <button
+            class="self-start rounded-lg p-1.5 text-muted hover:bg-error-surface hover:text-error"
+            [disabled]="suppression() === c.id"
+            (click)="supprimer(c)"
+            aria-label="Supprimer le commentaire"
+          >
+            <app-icon name="trash" [size]="16" />
+          </button>
+        </li>
+      } @empty {
+        <app-etat-vide icone="chat-circle-text" titre="Aucun commentaire" />
+      }
+    </ul>
+  } @else {
+    @for (i of [1, 2, 3]; track i) {
+      <app-squelette class="mb-3" [hauteur]="64" />
+    }
+  }
+</app-panneau>
