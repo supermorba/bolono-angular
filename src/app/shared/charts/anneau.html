@@ -1,0 +1,36 @@
+<svg [attr.width]="taille()" [attr.height]="taille()" viewBox="0 0 120 120" class="-rotate-90">
+  <circle
+    cx="60"
+    cy="60"
+    [attr.r]="rayon"
+    fill="none"
+    stroke="var(--color-card)"
+    [attr.stroke-width]="epaisseur"
+  />
+  @for (s of segments(); track s.nom) {
+    <circle
+      cx="60"
+      cy="60"
+      [attr.r]="rayon"
+      fill="none"
+      [attr.stroke]="s.couleur"
+      [attr.stroke-width]="survol() === s.nom ? epaisseur + 3 : epaisseur"
+      [attr.stroke-dasharray]="s.longueur + ' ' + circonference"
+      [attr.stroke-dashoffset]="-s.debut"
+      class="cursor-pointer transition-[stroke-width]"
+      (mouseenter)="survol.set(s.nom)"
+      (mouseleave)="survol.set(null)"
+    />
+  }
+</svg>
+<div
+  class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"
+>
+  @if (partSurvolee(); as p) {
+    <span class="text-xl font-bold">{{ p.valeur }}</span>
+    <span class="text-2xs text-muted-strong">{{ p.nom }}</span>
+  } @else {
+    <span class="text-2xl font-bold">{{ total() }}</span>
+    <span class="text-2xs text-muted-strong">au total</span>
+  }
+</div>

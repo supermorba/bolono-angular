@@ -1,15 +1,11 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Confirmation, Toasts } from './shared/ui';
+import { Confirmation, Toasts } from './shared/components/ui';
 
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, Toasts, Confirmation],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <router-outlet />
-    <app-toasts />
-    <app-confirmation />
-  `,
+  templateUrl: './app.html',
 })
 export class App {}

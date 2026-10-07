@@ -1,0 +1,15 @@
+<span class="inline-flex items-center gap-1.5 text-xs whitespace-nowrap">
+  @if (valeur() === null) {
+    <span class="font-semibold" [class]="surFonce() ? 'text-white/60' : 'text-muted-strong'"
+      >—</span
+    >
+  } @else {
+    <span class="inline-flex items-center gap-0.5 font-bold" [class]="couleur()">
+      <app-icon [name]="valeur()! >= 0 ? 'arrow-up' : 'arrow-down'" [size]="13" />
+      {{ valeur()! > 0 ? '+' : '' }}{{ valeur() }}%
+    </span>
+  }
+  @if (libelle()) {
+    <span [class]="surFonce() ? 'text-white/55' : 'text-muted'">{{ libelle() }}</span>
+  }
+</span>

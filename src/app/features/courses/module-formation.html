@@ -1,0 +1,75 @@
+<app-modale
+  [titre]="module() ? 'Modifier le module' : 'Nouveau module'"
+  largeur="max-w-xl"
+  (fermer)="fermer.emit()"
+>
+  <form id="form-module" class="space-y-3.5" (submit)="$event.preventDefault(); enregistrer()">
+    <label class="block text-xs font-semibold text-muted-strong">
+      Titre
+      <input class="input mt-1" name="titre" [(ngModel)]="modele.titre" required maxlength="200" />
+    </label>
+    <div>
+      <p class="mb-1.5 text-xs font-semibold text-muted-strong">Vidéo de la leçon</p>
+      <app-televersement
+        categorie="FORMATION_COURS"
+        [url]="modele.urlVideo"
+        (urlChange)="modele.urlVideo = $event ?? ''"
+        (duree)="modele.dureeSecondes = $event"
+        [effacable]="false"
+      />
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="block text-xs font-semibold text-muted-strong">
+        Durée (minutes)
+        <input
+          type="number"
+          min="0"
+          class="input mt-1"
+          name="min"
+          [ngModel]="minutes()"
+          (ngModelChange)="majDuree($event, secondes())"
+        />
+      </label>
+      <label class="block text-xs font-semibold text-muted-strong">
+        et secondes
+        <input
+          type="number"
+          min="0"
+          max="59"
+          class="input mt-1"
+          name="sec"
+          [ngModel]="secondes()"
+          (ngModelChange)="majDuree(minutes(), $event)"
+        />
+      </label>
+    </div>
+    <label class="block text-xs font-semibold text-muted-strong">
+      Description (facultative)
+      <textarea
+        class="input mt-1 min-h-20"
+        name="description"
+        [(ngModel)]="modele.description"
+      ></textarea>
+    </label>
+    <label class="flex items-center gap-2 text-ms">
+      <input
+        type="checkbox"
+        class="h-4 w-4 accent-terracotta"
+        name="horsLigne"
+        [(ngModel)]="modele.disponibleHorsLigne"
+      />
+      Téléchargeable pour un visionnage hors connexion
+    </label>
+  </form>
+  <ng-container pied>
+    <button class="btn-outline" (click)="fermer.emit()">Annuler</button>
+    <button class="btn-accent" type="submit" form="form-module" [disabled]="enregistrement()">
+      @if (enregistrement()) {
+        <span
+          class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+        ></span>
+      }
+      Enregistrer
+    </button>
+  </ng-container>
+</app-modale>

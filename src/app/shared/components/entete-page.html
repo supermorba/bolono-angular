@@ -1,0 +1,18 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <div class="min-w-0">
+    <h1 class="flex items-center gap-3 text-xl font-bold sm:text-2xl">
+      <span class="min-w-0 truncate">{{ titre() }}</span>
+      @if (chargement()) {
+        <span
+          class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-line border-t-terracotta"
+          aria-label="Mise à jour"
+        ></span>
+      }
+    </h1>
+    <div class="mt-0.5 text-sm text-muted-strong empty:hidden"><ng-content /></div>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 empty:hidden">
+    <ng-content select="[actions]" />
+  </div>
+</div>
+<ng-content select="[bas]" />

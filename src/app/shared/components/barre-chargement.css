@@ -1,0 +1,12 @@
+@keyframes defiler {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+.barre {
+  animation: defiler 1.1s ease-in-out infinite;
+}

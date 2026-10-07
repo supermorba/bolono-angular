@@ -1,0 +1,128 @@
+<app-panneau titre="Fiche boutique" (fermer)="fermer.emit()">
+  @if (fiche.error() && !fiche.hasValue()) {
+    <app-etat-vide icone="warning" titre="Fiche indisponible" [message]="erreur()">
+      <button class="btn-accent btn-sm mt-2" (click)="fiche.reload()">Réessayer</button>
+    </app-etat-vide>
+  } @else if (fiche.hasValue()) {
+    @let d = fiche.value();
+    @let b = d.boutique;
+    @if (banniere(); as src) {
+      <img
+        [src]="src"
+        alt=""
+        class="-mx-5 -mt-5 mb-5 h-32 w-[calc(100%+2.5rem)] max-w-none object-cover sm:-mx-6 sm:w-[calc(100%+3rem)]"
+      />
+    }
+    <div class="flex items-center gap-4">
+      <app-logo-boutique [url]="b.logoUrl" [taille]="64" />
+      <div class="min-w-0">
+        <p class="truncate text-xl font-bold">{{ b.nom }}</p>
+        <p class="text-sm text-muted-strong">{{ b.categorie || '—' }} · {{ b.ville || '—' }}</p>
+        <app-badge class="mt-1.5" [ton]="statuts[b.statut].ton">{{
+          statuts[b.statut].libelle
+        }}</app-badge>
+      </div>
+    </div>
+
+    @if (b.statut === 'MASQUEE') {
+      <div class="mt-5 rounded-xl border border-error/20 bg-error-surface p-3.5 text-sm text-error">
+        <p class="flex items-center gap-2 font-semibold">
+          <app-icon name="eye-slash" [size]="16" /> Masquée le {{ dateHeure(d.dateMasquage) }}
+        </p>
+        <p class="mt-1 text-error/90">
+          {{ d.motifMasquage ? 'Motif : ' + d.motifMasquage : 'Aucun motif indiqué.' }}
+        </p>
+        <p class="mt-1 text-xs text-error/80">
+          Ni la boutique ni ses produits ne sont visibles ; le vendeur ne peut pas la rouvrir.
+        </p>
+      </div>
+    }
+
+    @if (d.description) {
+      <p class="mt-5 text-sm whitespace-pre-line text-muted-strong">{{ d.description }}</p>
+    }
+
+    <p class="mt-7 mb-2.5 text-xs font-semibold tracking-wide text-muted uppercase">Activité</p>
+    <div class="grid grid-cols-3 gap-2.5">
+      @for (
+        s of [
+          { v: nombre(b.produitsEnLigne) + ' / ' + nombre(b.produits), l: 'produits en ligne' },
+          { v: nombre(b.ventes), l: 'commandes vendues' },
+          { v: fcfa(b.chiffreAffaires), l: "chiffre d'affaires" },
+        ];
+        track s.l
+      ) {
+        <div class="rounded-xl bg-ochre-surface px-3 py-2.5">
+          <p class="truncate text-lg font-bold">{{ s.v }}</p>
+          <p class="text-2xs leading-tight text-muted-strong">{{ s.l }}</p>
+        </div>
+      }
+    </div>
+
+    <p class="mt-7 mb-2.5 text-xs font-semibold tracking-wide text-muted uppercase">Vendeur</p>
+    <a
+      [routerLink]="['/utilisateurs']"
+      [queryParams]="{ id: b.proprietaireId }"
+      class="flex items-center gap-3 rounded-xl border border-line px-3.5 py-3 transition hover:border-sand-deep hover:bg-ochre-surface"
+    >
+      <app-icon name="user" [size]="18" class="text-terracotta" />
+      <span class="min-w-0 flex-1">
+        <span class="block truncate font-semibold">{{ b.proprietaire }}</span>
+        <span class="block truncate text-xs text-muted">{{ b.proprietaireEmail }}</span>
+      </span>
+      @if (b.proprietaireSuspendu) {
+        <app-badge ton="erreur">Suspendu</app-badge>
+      }
+      <app-icon name="caret-right" [size]="15" class="text-muted" />
+    </a>
+
+    <p class="mt-7 mb-2.5 text-xs font-semibold tracking-wide text-muted uppercase">
+      Coordonnées et versements
+    </p>
+    <dl class="space-y-2.5 text-sm">
+      @for (
+        l of [
+          { l: 'Adresse', v: d.adresse },
+          { l: 'Téléphone', v: d.telephone },
+          { l: 'WhatsApp', v: d.lienWhatsapp },
+          {
+            l: 'Compte de versement',
+            v: d.numeroVersement
+              ? (versement[d.moyenVersement ?? ''] ?? d.moyenVersement ?? '') +
+                ' · ' +
+                d.numeroVersement
+              : null,
+          },
+          { l: 'Créée le', v: dateCourte(b.dateCreation) },
+        ];
+        track l.l
+      ) {
+        <div class="flex justify-between gap-4">
+          <dt class="text-muted">{{ l.l }}</dt>
+          <dd class="text-right font-medium break-words">{{ l.v || '—' }}</dd>
+        </div>
+      }
+    </dl>
+  } @else {
+    <app-squelette [hauteur]="64" />
+    <app-squelette class="mt-5" [hauteur]="180" />
+  }
+
+  @if (fiche.hasValue()) {
+    <div pied class="border-t border-line bg-ivory/60 px-5 py-4 sm:px-6">
+      @if (fiche.value().boutique.statut === 'MASQUEE') {
+        <button class="btn-accent w-full" [disabled]="enCours()" (click)="changerVisibilite(true)">
+          <app-icon name="eye" [size]="17" /> Rétablir la boutique
+        </button>
+      } @else {
+        <button
+          class="btn-outline w-full text-error!"
+          [disabled]="enCours()"
+          (click)="changerVisibilite(false)"
+        >
+          <app-icon name="eye-slash" [size]="17" /> Masquer la boutique
+        </button>
+      }
+    </div>
+  }
+</app-panneau>

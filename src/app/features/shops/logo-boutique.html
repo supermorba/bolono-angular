@@ -1,0 +1,18 @@
+@if (src() && !enErreur()) {
+  <img
+    [src]="src()"
+    alt=""
+    class="rounded-xl object-cover"
+    [style.width.px]="taille()"
+    [style.height.px]="taille()"
+    (error)="enErreur.set(true)"
+  />
+} @else {
+  <span
+    class="flex items-center justify-center rounded-xl bg-sand text-brown"
+    [style.width.px]="taille()"
+    [style.height.px]="taille()"
+  >
+    <app-icon name="storefront" [size]="taille() * 0.5" />
+  </span>
+}

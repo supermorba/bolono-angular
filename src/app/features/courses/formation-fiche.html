@@ -1,0 +1,256 @@
+<a
+  routerLink="/formations"
+  class="mb-3 inline-flex items-center gap-1.5 text-xs font-semibold text-muted-strong hover:text-brown"
+>
+  <app-icon name="caret-left" [size]="14" /> Formations
+</a>
+
+@if (!nouvelle() && fiche.error() && !fiche.hasValue()) {
+  <div class="card">
+    <app-etat-vide icone="warning" titre="Formation indisponible" [message]="erreur()">
+      <button class="btn-accent btn-sm mt-2" (click)="fiche.reload()">Réessayer</button>
+    </app-etat-vide>
+  </div>
+} @else if (nouvelle() || fiche.hasValue()) {
+  <app-entete-page [titre]="nouvelle() ? 'Nouvelle formation' : (fiche.value()?.titre ?? '')">
+    @if (!nouvelle()) {
+      <button actions class="btn-outline btn-sm text-error!" (click)="supprimer()">
+        <app-icon name="trash" [size]="15" /> Supprimer la formation
+      </button>
+    }
+  </app-entete-page>
+
+  <div class="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+    <div class="flex min-w-0 flex-col gap-5">
+      <!-- Informations -->
+      <form class="card p-4 sm:p-5" (submit)="$event.preventDefault(); enregistrer()">
+        <h2 class="card-title mb-4">Informations</h2>
+        <div class="grid gap-3.5 md:grid-cols-2">
+          <label class="block text-xs font-semibold text-muted-strong md:col-span-2">
+            Titre
+            <input
+              class="input mt-1"
+              name="titre"
+              [(ngModel)]="modele.titre"
+              required
+              maxlength="200"
+            />
+          </label>
+          <label class="block text-xs font-semibold text-muted-strong">
+            Catégorie
+            <select class="input mt-1" name="categorie" [(ngModel)]="modele.categorie" required>
+              <option value="" disabled>Choisir…</option>
+              @for (c of categoriesProposees(); track c.id) {
+                <option [value]="c.nom">{{ c.nom }}{{ c.active ? '' : ' (désactivée)' }}</option>
+              }
+            </select>
+          </label>
+          <label class="block text-xs font-semibold text-muted-strong">
+            Niveau
+            <select class="input mt-1" name="niveau" [(ngModel)]="modele.niveau">
+              <option [ngValue]="null">Non précisé</option>
+              @for (n of niveaux; track n) {
+                <option [ngValue]="n">{{ n }}</option>
+              }
+            </select>
+          </label>
+          <label class="block text-xs font-semibold text-muted-strong md:col-span-2">
+            Mentor auteur
+            <select class="input mt-1" name="auteur" [(ngModel)]="modele.auteurId">
+              <option [ngValue]="null">
+                {{ nouvelle() ? 'Moi (administrateur)' : 'Inchangé' }}
+              </option>
+              @for (m of mentors(); track m.id) {
+                <option [ngValue]="m.id">
+                  {{ m.nom }}{{ m.specialite ? ' — ' + m.specialite : '' }}
+                </option>
+              }
+            </select>
+          </label>
+          <label class="block text-xs font-semibold text-muted-strong md:col-span-2">
+            Description
+            <textarea
+              class="input mt-1 min-h-28"
+              name="description"
+              [(ngModel)]="modele.description"
+            ></textarea>
+          </label>
+          <div class="md:col-span-2">
+            <p class="mb-1.5 text-xs font-semibold text-muted-strong">Image de couverture</p>
+            <app-televersement
+              categorie="FORMATION_BANNIERE"
+              [(url)]="modele.miniatureUrl"
+              hauteurApercu="max-h-56"
+            />
+          </div>
+        </div>
+        @if (!nouvelle()) {
+          <app-option-notification
+            class="mt-5 block"
+            [destinataire]="fiche.value()?.auteur?.nom ?? 'le mentor'"
+            [(valeur)]="notification"
+          />
+        }
+        <div class="mt-5 flex justify-end">
+          <button class="btn-accent" type="submit" [disabled]="enregistrement()">
+            @if (enregistrement()) {
+              <span
+                class="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+              ></span>
+            }
+            {{ nouvelle() ? 'Créer la formation' : 'Enregistrer les modifications' }}
+          </button>
+        </div>
+      </form>
+
+      <!-- Modules -->
+      @if (fiche.hasValue(); as _) {
+        @let f = fiche.value()!;
+        <section class="card p-4 sm:p-5">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="card-title">Modules ({{ f.modules.length }})</h2>
+            <button class="btn-primary btn-sm" (click)="moduleEdite.set('nouveau')">
+              <app-icon name="play-circle" [size]="15" /> Ajouter un module
+            </button>
+          </div>
+          @if (f.modules.length) {
+            <ol class="space-y-2.5">
+              @for (m of f.modules; track m.id; let i = $index, premier = $first, dernier = $last) {
+                <li
+                  class="flex flex-wrap items-center gap-3 rounded-xl border border-line p-3 sm:flex-nowrap"
+                >
+                  <div class="flex flex-col">
+                    <button
+                      class="rounded p-0.5 text-muted hover:text-brown disabled:opacity-25"
+                      [disabled]="premier || reordonnancement()"
+                      (click)="deplacer(i, -1)"
+                      aria-label="Monter"
+                    >
+                      <app-icon name="arrow-up" [size]="14" />
+                    </button>
+                    <button
+                      class="rounded p-0.5 text-muted hover:text-brown disabled:opacity-25"
+                      [disabled]="dernier || reordonnancement()"
+                      (click)="deplacer(i, 1)"
+                      aria-label="Descendre"
+                    >
+                      <app-icon name="arrow-down" [size]="14" />
+                    </button>
+                  </div>
+                  <span
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-info-surface text-sm font-bold text-info"
+                    >{{ m.ordre }}</span
+                  >
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate font-semibold">{{ m.titre }}</p>
+                    <p
+                      class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted"
+                    >
+                      <span>{{ duree(m.dureeSecondes) }}</span>
+                      <span
+                        >{{ nombre(m.termines) }} apprenant{{ m.termines > 1 ? 's' : '' }} l'ont
+                        terminé</span
+                      >
+                      @if (m.disponibleHorsLigne) {
+                        <app-badge ton="info">Hors ligne</app-badge>
+                      }
+                      @if (m.quiz; as q) {
+                        <app-badge ton="accent"
+                          >Quiz · {{ q.questions }} question{{
+                            q.questions > 1 ? 's' : ''
+                          }}</app-badge
+                        >
+                      }
+                    </p>
+                  </div>
+                  <div class="flex shrink-0 gap-1">
+                    <button class="btn-outline btn-sm" (click)="quizModule.set(m)">
+                      <app-icon name="check-circle" [size]="14" />
+                      {{ m.quiz ? 'Quiz' : 'Ajouter un quiz' }}
+                    </button>
+                    <button
+                      class="rounded-lg p-2 text-muted hover:bg-card hover:text-brown"
+                      (click)="moduleEdite.set(m)"
+                      aria-label="Modifier le module"
+                    >
+                      <app-icon name="gear-six" [size]="17" />
+                    </button>
+                    <button
+                      class="rounded-lg p-2 text-muted hover:bg-error-surface hover:text-error"
+                      (click)="supprimerModule(m)"
+                      aria-label="Supprimer le module"
+                    >
+                      <app-icon name="trash" [size]="17" />
+                    </button>
+                  </div>
+                </li>
+              }
+            </ol>
+          } @else {
+            <app-etat-vide
+              icone="play-circle"
+              titre="Aucun module"
+              message="Ajoutez la première leçon vidéo de cette formation."
+            />
+          }
+        </section>
+      }
+    </div>
+
+    <!-- Suivi -->
+    @if (fiche.hasValue()) {
+      @let f = fiche.value()!;
+      <aside class="flex flex-col gap-5">
+        <section class="card overflow-hidden">
+          @if (mediaUrl(f.miniatureUrl); as src) {
+            <img [src]="src" alt="" class="aspect-video w-full object-cover" />
+          }
+          <div class="p-4 sm:p-5">
+            <h2 class="card-title mb-3">Suivi des apprenants</h2>
+            <dl class="grid grid-cols-2 gap-2.5 text-ms">
+              @for (
+                s of [
+                  { l: 'Apprenants', v: nombre(f.apprenants) },
+                  { l: 'Ont terminé', v: nombre(f.termines) },
+                  { l: 'Complétion', v: f.tauxCompletion + ' %' },
+                  { l: 'Durée totale', v: duree(f.dureeTotaleSecondes) },
+                ];
+                track s.l
+              ) {
+                <div class="rounded-xl bg-ochre-surface px-3 py-2.5">
+                  <dt class="text-2xs text-muted-strong">{{ s.l }}</dt>
+                  <dd class="font-bold">{{ s.v }}</dd>
+                </div>
+              }
+            </dl>
+            @if (f.auteur) {
+              <p class="mt-4 text-xs text-muted-strong">
+                Mentor : <b class="text-brown">{{ f.auteur.nom }}</b>
+              </p>
+            }
+          </div>
+        </section>
+      </aside>
+    }
+  </div>
+} @else {
+  <app-squelette [hauteur]="32" />
+  <app-squelette class="mt-5" [hauteur]="420" />
+}
+
+@if (moduleEdite(); as m) {
+  <app-module-formation
+    [formationId]="fiche.value()!.id"
+    [module]="m === 'nouveau' ? null : m"
+    (fermer)="moduleEdite.set(null)"
+    (enregistre)="fiche.value.set($event); moduleEdite.set(null)"
+  />
+}
+@if (quizModule(); as m) {
+  <app-editeur-quiz
+    [moduleId]="m.id"
+    [titreModule]="m.titre"
+    (fermer)="quizModule.set(null)"
+    (enregistre)="quizModule.set(null); fiche.reload()"
+  />
+}

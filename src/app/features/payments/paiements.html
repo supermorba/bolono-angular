@@ -1,0 +1,202 @@
+<app-entete-page titre="Paiements et litiges"> </app-entete-page>
+
+<div class="onglets mb-4 sm:w-fit" role="tablist">
+  @for (o of onglets; track o.valeur) {
+    <button
+      class="onglet"
+      [class.onglet-actif]="onglet() === o.valeur"
+      role="tab"
+      [attr.aria-selected]="onglet() === o.valeur"
+      (click)="onglet.set(o.valeur)"
+    >
+      {{ o.libelle }}
+      @if (o.compte && o.compte() > 0) {
+        <span
+          class="min-w-5 rounded-full bg-terracotta px-1.5 text-center text-2xs leading-5 font-bold text-white"
+          >{{ o.compte() }}</span
+        >
+      }
+    </button>
+  }
+</div>
+
+<div class="card relative p-4 sm:p-5">
+  @if (onglet() === 'paiements') {
+    <app-barre-chargement [actif]="paiements.isLoading()" />
+    @if (paiements.value(); as liste) {
+      @if (liste.length) {
+        <ul class="divide-y divide-line">
+          @for (p of liste; track p.reference) {
+            <li class="py-4">
+              <div class="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                <div>
+                  <p class="font-semibold">{{ p.reference }} · {{ fcfa(p.montant) }}</p>
+                  <p class="text-xs text-muted-strong">
+                    {{ p.acheteur?.nom }} {{ p.acheteur?.telephone ?? '' }} ·
+                    {{
+                      p.moyen ? (libellesPaiement[$any(p.moyen)] ?? p.moyen) : 'Moyen non précisé'
+                    }}
+                    · {{ dateHeure(p.creeLe) }} · {{ p.transactions.length }} vendeur(s)
+                  </p>
+                </div>
+              </div>
+              <app-confirmation-paiement
+                [paiement]="p"
+                [occupe]="enCours() === p.reference"
+                (confirmer)="confirmerPaiement(p, $event.montant, $event.operation)"
+              />
+            </li>
+          }
+        </ul>
+      } @else {
+        <app-etat-vide
+          icone="credit-card"
+          titre="Aucun paiement en attente"
+          message="Les paiements à rapprocher apparaîtront ici."
+        />
+      }
+    } @else if (paiements.error()) {
+      <app-etat-vide
+        icone="warning"
+        titre="Chargement impossible"
+        [message]="erreur(paiements.error())"
+      />
+    } @else {
+      <app-squelette [hauteur]="64" />
+    }
+  } @else {
+    @if (onglet() === 'toutes') {
+      <div class="mb-4 flex flex-wrap gap-1.5">
+        @for (s of statuts; track s.valeur) {
+          <button
+            class="rounded-md border px-3 py-1 text-xs font-semibold"
+            [class]="
+              filtreStatut() === s.valeur
+                ? 'border-terracotta bg-terracotta-light text-terracotta'
+                : 'border-line text-muted-strong'
+            "
+            (click)="filtreStatut.set(s.valeur)"
+          >
+            {{ s.libelle }}
+          </button>
+        }
+      </div>
+    }
+    <app-barre-chargement [actif]="transactions.isLoading()" />
+    @if (transactions.value(); as liste) {
+      @if (liste.length) {
+        <div class="overflow-x-auto">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Transaction</th>
+                <th class="hidden sm:table-cell">Acheteur → vendeur</th>
+                <th class="text-right">Montant</th>
+                <th>Étape</th>
+                <th class="hidden md:table-cell">Fonds</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (t of liste; track t.reference) {
+                <tr
+                  class="cursor-pointer"
+                  (click)="ouverte.set(ouverte() === t.reference ? null : t.reference)"
+                >
+                  <td class="whitespace-nowrap">
+                    <p class="font-semibold">{{ t.reference }}</p>
+                    <p class="text-2xs text-muted">{{ dateHeure(t.creeeLe) }}</p>
+                  </td>
+                  <td class="hidden sm:table-cell">
+                    {{ t.acheteur.nom }} → {{ t.vendeur.nom }}
+                    @if (onglet() === 'verser') {
+                      <span
+                        class="block text-2xs"
+                        [class]="t.compteVersementVendeur ? 'text-muted' : 'text-error'"
+                      >
+                        {{ t.compteVersementVendeur ?? 'Compte de versement non renseigné' }}
+                      </span>
+                    }
+                  </td>
+                  <td class="text-right font-semibold whitespace-nowrap">
+                    {{ fcfa(onglet() === 'verser' ? t.montantVendeur : t.montant) }}
+                  </td>
+                  <td>
+                    <app-badge [ton]="tons[t.statut]">{{
+                      libellesTransaction[t.statut]
+                    }}</app-badge>
+                  </td>
+                  <td class="hidden text-xs text-muted-strong md:table-cell">
+                    {{ libellesFonds[t.fonds] }}
+                  </td>
+                  <td class="text-right whitespace-nowrap" (click)="$event.stopPropagation()">
+                    @switch (onglet()) {
+                      @case ('litiges') {
+                        <button
+                          class="btn-outline btn-sm"
+                          [disabled]="enCours() === t.reference"
+                          (click)="trancher(t, 'EN_FAVEUR_ACHETEUR')"
+                        >
+                          Acheteur
+                        </button>
+                        <button
+                          class="btn-outline btn-sm ml-1.5"
+                          [disabled]="enCours() === t.reference"
+                          (click)="trancher(t, 'EN_FAVEUR_VENDEUR')"
+                        >
+                          Vendeur
+                        </button>
+                      }
+                      @case ('rembourser') {
+                        <button
+                          class="btn-accent btn-sm"
+                          [disabled]="enCours() === t.reference"
+                          (click)="marquer(t, true)"
+                        >
+                          Marquer remboursé
+                        </button>
+                      }
+                      @case ('verser') {
+                        <button
+                          class="btn-accent btn-sm"
+                          [disabled]="enCours() === t.reference"
+                          (click)="marquer(t, false)"
+                        >
+                          Marquer versé
+                        </button>
+                      }
+                      @default {
+                        <app-icon
+                          [name]="ouverte() === t.reference ? 'caret-down' : 'caret-right'"
+                          [size]="16"
+                          class="text-muted"
+                        />
+                      }
+                    }
+                  </td>
+                </tr>
+                @if (ouverte() === t.reference) {
+                  <tr class="bg-ochre-surface/50! hover:bg-ochre-surface/50!">
+                    <td colspan="6" class="py-4!"><app-detail-transaction [transaction]="t" /></td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <app-etat-vide icone="check-circle" [titre]="vide()" />
+      }
+    } @else if (transactions.error()) {
+      <app-etat-vide
+        icone="warning"
+        titre="Chargement impossible"
+        [message]="erreur(transactions.error())"
+      />
+    } @else {
+      @for (i of [1, 2, 3]; track i) {
+        <app-squelette class="my-2" [hauteur]="44" />
+      }
+    }
+  }
+</div>

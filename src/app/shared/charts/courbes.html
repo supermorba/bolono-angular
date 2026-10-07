@@ -1,0 +1,94 @@
+@if (largeur() > 0) {
+  <svg
+    [attr.width]="largeur()"
+    [attr.height]="hauteur()"
+    class="overflow-visible"
+    (mouseleave)="survol.set(null)"
+  >
+    <defs>
+      @for (s of series(); track s.nom; let i = $index) {
+        <linearGradient [attr.id]="'aire-' + uid + '-' + i" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" [attr.stop-color]="s.couleur" stop-opacity="0.22" />
+          <stop offset="100%" [attr.stop-color]="s.couleur" stop-opacity="0" />
+        </linearGradient>
+      }
+    </defs>
+    @for (g of axe().pas; track g) {
+      <line
+        [attr.x1]="gauche"
+        [attr.x2]="largeur()"
+        [attr.y1]="y(g)"
+        [attr.y2]="y(g)"
+        stroke="var(--color-line)"
+        stroke-dasharray="3 4"
+      />
+      <text [attr.x]="gauche - 8" [attr.y]="y(g) + 4" text-anchor="end" class="fill-muted text-2xs">
+        {{ g }}
+      </text>
+    }
+    @for (l of etiquettesX(); track l.i) {
+      <text
+        [attr.x]="x(l.i)"
+        [attr.y]="hauteur() - 4"
+        text-anchor="middle"
+        class="fill-muted text-2xs"
+      >
+        {{ l.texte }}
+      </text>
+    }
+    @for (s of series(); track s.nom; let i = $index) {
+      <path [attr.d]="aire(s.valeurs)" [attr.fill]="'url(#aire-' + uid + '-' + i + ')'" />
+      <path
+        [attr.d]="ligne(s.valeurs)"
+        fill="none"
+        [attr.stroke]="s.couleur"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      @for (v of s.valeurs; track $index; let j = $index, dernier = $last) {
+        @if (dernier || s.valeurs.length <= 40) {
+          <circle
+            [attr.cx]="x(j)"
+            [attr.cy]="y(v)"
+            [attr.r]="dernier ? 4.5 : 2.5"
+            [attr.fill]="s.couleur"
+            [attr.stroke]="dernier ? 'white' : 'none'"
+            stroke-width="2"
+          />
+        }
+      }
+    }
+    @if (survol() !== null) {
+      <line
+        [attr.x1]="x(survol()!)"
+        [attr.x2]="x(survol()!)"
+        [attr.y1]="haut"
+        [attr.y2]="bas()"
+        stroke="var(--color-sand-deep)"
+      />
+    }
+    <rect
+      [attr.x]="gauche"
+      [attr.y]="haut"
+      [attr.width]="largeur() - gauche"
+      [attr.height]="bas() - haut"
+      fill="transparent"
+      (mousemove)="suivre($event)"
+    />
+  </svg>
+  @if (survol() !== null) {
+    <div
+      class="pointer-events-none absolute z-10 min-w-32 -translate-x-1/2 rounded-lg bg-brown px-3 py-2 text-xs text-white shadow-lg"
+      [style.left.px]="x(survol()!)"
+      [style.top.px]="0"
+    >
+      <p class="mb-1 font-semibold">{{ etiquettes()[survol()!] }}</p>
+      @for (s of series(); track s.nom) {
+        <p class="flex items-center gap-2">
+          <span class="h-2 w-2 rounded-full" [style.background]="s.couleur"></span>
+          {{ s.nom }} : <b>{{ s.valeurs[survol()!] }}</b>
+        </p>
+      }
+    </div>
+  }
+}

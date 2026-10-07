@@ -1,0 +1,139 @@
+<app-entete-page titre="Mentorat" [chargement]="liste.isLoading() && !!page()"> </app-entete-page>
+
+<div class="onglets mb-5 sm:w-fit" role="tablist">
+  @for (o of onglets; track o.valeur) {
+    <button
+      class="onglet"
+      [class.onglet-actif]="statut() === o.valeur"
+      role="tab"
+      [attr.aria-selected]="statut() === o.valeur"
+      (click)="filtrer(o.valeur)"
+    >
+      {{ o.libelle }}
+    </button>
+  }
+</div>
+
+@if (liste.error() && !page()) {
+  <div class="card">
+    <app-etat-vide icone="warning" titre="Chargement impossible" [message]="erreur()">
+      <button class="btn-accent btn-sm mt-2" (click)="liste.reload()">Réessayer</button>
+    </app-etat-vide>
+  </div>
+} @else if (page(); as p) {
+  @if (p.content.length) {
+    <div
+      class="grid grid-cols-1 gap-5 transition-opacity xl:grid-cols-2"
+      [class.opacity-60]="liste.isLoading()"
+    >
+      @for (c of p.content; track c.id) {
+        <article class="card p-4 sm:p-5">
+          <div class="flex items-start gap-4">
+            <app-avatar [photo]="c.photoUrl" [nom]="c.artisanNom" [size]="52" />
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <h2 class="font-bold">{{ c.artisanNom }}</h2>
+                <app-badge [ton]="statuts[c.statut].ton">{{ statuts[c.statut].libelle }}</app-badge>
+              </div>
+              <p class="text-xs text-muted">
+                {{ c.specialite ?? 'Artisan' }} · candidature du {{ dateCourte(c.dateCandidature) }}
+              </p>
+            </div>
+          </div>
+
+          <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt class="text-xs text-muted">Domaine d'expertise</dt>
+              <dd class="font-medium">{{ c.domaineExpertise || '—' }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">Expérience</dt>
+              <dd class="font-medium">
+                {{
+                  c.anneesExperience != null
+                    ? c.anneesExperience + ' an' + (c.anneesExperience > 1 ? 's' : '')
+                    : '—'
+                }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">Contact</dt>
+              <dd class="truncate font-medium">
+                {{ c.artisanTelephone || c.artisanEmail || '—' }}
+              </dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted">Atelier</dt>
+              <dd class="truncate font-medium">{{ c.adresseAtelier || '—' }}</dd>
+            </div>
+          </dl>
+
+          @if (c.motivation) {
+            <blockquote
+              class="mt-4 rounded-xl bg-ochre-surface p-3.5 text-sm text-muted-strong italic"
+            >
+              « {{ c.motivation }} »
+            </blockquote>
+          }
+          @if (c.lienGroupeWhatsapp) {
+            <a
+              [href]="c.lienGroupeWhatsapp"
+              target="_blank"
+              rel="noopener"
+              class="link-accent mt-3 inline-block"
+              >Groupe WhatsApp proposé ↗</a
+            >
+          }
+
+          @if (c.statut === 'EN_ATTENTE') {
+            <div class="mt-5 flex gap-2">
+              <button
+                class="btn-accent flex-1"
+                [disabled]="enCours() === c.id"
+                (click)="decider(c, 'ACCEPTE')"
+              >
+                <app-icon name="seal-check" [size]="18" /> Accepter
+              </button>
+              <button
+                class="btn-outline flex-1"
+                [disabled]="enCours() === c.id"
+                (click)="decider(c, 'REFUSE')"
+              >
+                <app-icon name="x" [size]="18" /> Refuser
+              </button>
+            </div>
+          } @else {
+            <p class="mt-4 border-t border-line pt-3 text-xs text-muted">
+              {{ c.statut === 'ACCEPTE' ? 'Acceptée' : 'Refusée' }} le
+              {{ dateHeure(c.dateDecision) }}
+              {{ c.adminDecideurNom ? 'par ' + c.adminDecideurNom : '' }}
+              @if (c.motifRefus) {
+                — motif : {{ c.motifRefus }}
+              }
+            </p>
+          }
+        </article>
+      }
+    </div>
+    <app-pagination
+      [page]="p.number"
+      [pages]="p.totalPages"
+      [total]="p.totalElements"
+      (changer)="numero.set($event)"
+    />
+  } @else {
+    <div class="card">
+      <app-etat-vide
+        icone="seal-check"
+        [titre]="statut() === 'EN_ATTENTE' ? 'Aucune candidature en attente' : 'Aucune candidature'"
+        message="Les demandes des artisans apparaîtront ici."
+      />
+    </div>
+  }
+} @else {
+  <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+    @for (i of [1, 2]; track i) {
+      <app-squelette [hauteur]="280" />
+    }
+  </div>
+}

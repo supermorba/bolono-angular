@@ -1,0 +1,70 @@
+<div
+  class="relative overflow-hidden rounded-xl border-2 border-dashed transition"
+  [class]="survol() ? 'border-terracotta bg-terracotta-light' : 'border-line bg-ivory'"
+  (dragover)="$event.preventDefault(); survol.set(true)"
+  (dragleave)="survol.set(false)"
+  (drop)="deposer($event)"
+>
+  @if (apercu(); as src) {
+    @if (video()) {
+      <video
+        [src]="src"
+        controls
+        preload="metadata"
+        class="aspect-video w-full bg-black object-contain"
+      ></video>
+    } @else {
+      <img [src]="src" alt="" class="w-full object-cover" [class]="hauteurApercu()" />
+    }
+  } @else {
+    <div
+      class="flex flex-col items-center justify-center gap-1.5 px-4 text-center text-muted"
+      [class]="hauteurVide()"
+    >
+      <app-icon [name]="video() ? 'play-circle' : 'image'" [size]="30" />
+      <p class="text-xs">Glissez un fichier ici ou choisissez-le</p>
+    </div>
+  }
+  @if (enCours()) {
+    <div class="absolute inset-x-0 bottom-0 h-1.5 bg-black/10">
+      <div class="h-full bg-terracotta transition-[width]" [style.width.%]="progression()"></div>
+    </div>
+  }
+</div>
+<div class="mt-2 flex flex-wrap items-center gap-2">
+  <label
+    class="btn-outline btn-sm cursor-pointer"
+    [class.pointer-events-none]="enCours()"
+    [class.opacity-50]="enCours()"
+  >
+    <app-icon name="arrow-up" [size]="14" />
+    {{ enCours() ? 'Envoi… ' + progression() + ' %' : url() ? 'Remplacer' : 'Choisir un fichier' }}
+    <input
+      type="file"
+      class="sr-only"
+      [accept]="video() ? 'video/*' : 'image/*'"
+      (change)="choisir($event)"
+    />
+  </label>
+  @if (url() && !enCours() && effacable()) {
+    <button
+      type="button"
+      class="btn-sm text-xs font-semibold text-error hover:underline"
+      (click)="url.set(null)"
+    >
+      Retirer
+    </button>
+  }
+  @if (enCours()) {
+    <button
+      type="button"
+      class="btn-sm text-xs font-semibold text-muted-strong hover:underline"
+      (click)="annuler()"
+    >
+      Annuler
+    </button>
+  }
+</div>
+@if (erreur(); as message) {
+  <p class="mt-1.5 text-xs text-error">{{ message }}</p>
+}
