@@ -457,11 +457,17 @@
                       <app-icon [name]="styleActivite[a.type].icone" [size]="19" />
                     </span>
                     <span class="min-w-0 flex-1">
-                      <span class="block truncate text-ms font-semibold" [title]="a.titre">{{
-                        a.titre
+                      <span
+                        class="block truncate text-ms font-semibold"
+                        [title]="texteActivite(a.type, a.titre)"
+                      >{{
+                        texteActivite(a.type, a.titre)
                       }}</span>
-                      <span class="block truncate text-xs text-muted-strong" [title]="a.detail">{{
-                        a.detail
+                      <span
+                        class="block truncate text-xs text-muted-strong"
+                        [title]="texteActivite(a.type, a.detail)"
+                      >{{
+                        texteActivite(a.type, a.detail)
                       }}</span>
                       <span class="mt-0.5 block text-2xs text-muted">{{ ilYa(a.date) }}</span>
                     </span>
@@ -510,7 +516,7 @@
             s of [
               { libelle: 'Artisans', icone: 'hand-heart', ind: donnees()?.communaute?.artisans },
               { libelle: 'Mentors', icone: 'medal', ind: donnees()?.communaute?.mentors },
-              { libelle: 'Acheteurs', icone: 'storefront', ind: donnees()?.communaute?.acheteurs },
+              { libelle: 'Membres', icone: 'users-three', ind: donnees()?.communaute?.acheteurs },
             ];
             track s.libelle
           ) {

@@ -11,7 +11,12 @@ import type { SyntheseVentes } from '../payments/payments.model';
 import { API_ADMIN, derniereValeur, rechargerEnDirect } from '../../core/api/ressources';
 import { FormsModule } from '@angular/forms';
 import { Anneau, Courbes, Histogramme, type Part } from '../../shared/charts/charts';
-import { STYLE_ACTIVITE, cheminLien, parametresLien } from '../activity/activity.presentation';
+import {
+  STYLE_ACTIVITE,
+  cheminLien,
+  parametresLien,
+  texteActivite,
+} from '../activity/activity.presentation';
 import { Icon } from '../../shared/icons/icon';
 import {
   Badge,
@@ -57,6 +62,7 @@ export class DashboardPage {
   protected readonly libellesCommande = LIBELLES_COMMANDE;
   protected readonly tonCommande = TON_COMMANDE;
   protected readonly styleActivite = STYLE_ACTIVITE;
+  protected readonly texteActivite = texteActivite;
   protected readonly cheminLien = cheminLien;
   protected readonly parametresLien = parametresLien;
 
@@ -119,7 +125,7 @@ export class DashboardPage {
           valeurs: d.inscriptions.map((p) => p.artisans),
         },
         {
-          nom: 'Acheteurs',
+          nom: 'Membres',
           couleur: 'var(--color-chart-vert)',
           valeurs: d.inscriptions.map((p) => p.acheteurs),
         },
@@ -132,7 +138,7 @@ export class DashboardPage {
     if (!r) return [];
     return [
       { nom: 'Artisans', valeur: r.artisans, couleur: 'var(--color-chart-artisan)' },
-      { nom: 'Acheteurs', valeur: r.acheteurs, couleur: 'var(--color-chart-acheteur)' },
+      { nom: 'Membres', valeur: r.acheteurs, couleur: 'var(--color-chart-acheteur)' },
       { nom: 'Mentors', valeur: r.mentors, couleur: 'var(--color-chart-mentor)' },
       { nom: 'Administrateurs', valeur: r.administrateurs, couleur: 'var(--color-sand-deep)' },
     ];
