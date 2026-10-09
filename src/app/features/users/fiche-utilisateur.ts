@@ -196,7 +196,7 @@ export class FicheUtilisateur {
           }
         : {
             titre: `Retirer l'accès administrateur à ${u.nom} ?`,
-            message: 'Le compte retrouve son profil habituel (artisan ou acheteur).',
+            message: 'Le compte retrouve son profil habituel (artisan ou membre).',
             confirmer: "Retirer l'accès",
             danger: true,
             notification: u.nom,

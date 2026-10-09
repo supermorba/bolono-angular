@@ -14,7 +14,7 @@ import type { Activite, TypeActivite } from './activity.model';
 import { NotificationsService } from '../../core/notifications/notifications.service';
 import { Icon } from '../../shared/icons/icon';
 import { EtatVide, Squelette, EntetePage } from '../../shared/components/ui';
-import { STYLE_ACTIVITE, cheminLien, parametresLien } from './activity.presentation';
+import { STYLE_ACTIVITE, cheminLien, parametresLien, texteActivite } from './activity.presentation';
 import { ActivityService } from './activity.service';
 
 const FILTRES: { valeur: TypeActivite | ''; libelle: string }[] = [
@@ -42,6 +42,7 @@ export class ActivitePage {
   protected readonly dateHeure = dateHeure;
   protected readonly cheminLien = cheminLien;
   protected readonly parametresLien = parametresLien;
+  protected readonly texteActivite = texteActivite;
 
   protected readonly type = signal<TypeActivite | ''>('');
   protected readonly elements = signal<Activite[]>([]);

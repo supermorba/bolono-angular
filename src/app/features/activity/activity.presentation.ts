@@ -10,6 +10,20 @@ export const STYLE_ACTIVITE: Record<TypeActivite, { icone: string; classes: stri
   MENTORAT: { icone: 'seal-check', classes: 'bg-warning-surface text-warning' },
 };
 
+/** Les nouvelles inscriptions sont des membres, même si l'API garde l'ancien libellé. */
+export function texteActivite(type: TypeActivite, texte: string): string {
+  if (type !== 'INSCRIPTION') return texte;
+  return texte.replace(/\bacheteurs?\b/gi, (mot) => {
+    const membre =
+      mot === mot.toUpperCase()
+        ? 'MEMBRE'
+        : mot[0] === mot[0].toUpperCase()
+          ? 'Membre'
+          : 'membre';
+    return membre + (/s$/i.test(mot) ? 's' : '');
+  });
+}
+
 /** Chemin d'un lien d'activité, qui peut porter des paramètres (/utilisateurs?id=12). */
 export function cheminLien(lien: string): string {
   return lien.split('?')[0];

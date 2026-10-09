@@ -29,12 +29,14 @@
             class="block rounded-lg px-3 py-3 transition hover:bg-ivory"
           >
             <span class="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span class="text-ms font-semibold">{{ a.titre }}</span>
+              <span class="text-ms font-semibold">{{ texteActivite(a.type, a.titre) }}</span>
               <span class="text-2xs text-muted" [title]="dateHeure(a.date)">{{
                 ilYa(a.date)
               }}</span>
             </span>
-            <span class="block text-xs text-muted-strong">{{ a.detail }}</span>
+            <span class="block text-xs text-muted-strong">{{
+              texteActivite(a.type, a.detail)
+            }}</span>
           </a>
         </li>
       }

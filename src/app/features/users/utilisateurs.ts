@@ -111,7 +111,7 @@ export class UtilisateursPage {
       { valeur: 'ARTISAN', libelle: 'Artisans', compte: c?.artisans },
       { valeur: 'VENDEUR', libelle: 'Vendeurs', compte: c?.vendeurs },
       { valeur: 'MENTOR', libelle: 'Mentors', compte: c?.mentors },
-      { valeur: 'ACHETEUR', libelle: 'Acheteurs', compte: c?.acheteurs },
+      { valeur: 'ACHETEUR', libelle: 'Membres', compte: c?.acheteurs },
       { valeur: 'ADMIN', libelle: 'Administrateurs', compte: c?.administrateurs },
     ];
   });
